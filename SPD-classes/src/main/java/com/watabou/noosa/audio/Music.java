@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,14 +21,21 @@
 
 package com.watabou.noosa.audio;
 
-import com.badlogic.gdx.Gdx;
+import android.app.Activity;
+import android.content.res.AssetFileDescriptor;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.os.Build;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
+
 import com.watabou.noosa.Game;
 
 public enum Music {
 	
 	INSTANCE;
 	
-	private com.badlogic.gdx.audio.Music player;
+	private MediaPlayer player;
 	
 	private String lastPlayed;
 	private boolean looping;
@@ -36,7 +43,7 @@ public enum Music {
 	private boolean enabled = true;
 	private float volume = 1f;
 	
-	public synchronized void play( String assetName, boolean looping ) {
+	public void play( String assetName, boolean looping ) {
 		
 		if (isPlaying() && lastPlayed != null && lastPlayed.equals( assetName )) {
 			return;
@@ -52,55 +59,68 @@ public enum Music {
 		}
 		
 		try {
-			player = Gdx.audio.newMusic(Gdx.files.internal(assetName));
+			
+			AssetFileDescriptor afd = Game.instance.getAssets().openFd( assetName );
+			
+			MediaPlayer mp = new MediaPlayer();
+			mp.setAudioStreamType( AudioManager.STREAM_MUSIC );
+			mp.setDataSource( afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength() );
+			mp.prepare();
+			player = mp;
+			player.start();
 			player.setLooping(looping);
-			player.setVolume(volume);
-			player.play();
-		} catch (Exception e){
+			player.setVolume(volume, volume);
+			
+		} catch (Exception e) {
+			
 			Game.reportException(e);
 			player = null;
+			
 		}
-		
 	}
 	
-	public synchronized void mute() {
+	public void mute() {
 		lastPlayed = null;
 		stop();
 	}
 	
-	public synchronized void pause() {
+	public void pause() {
 		if (player != null) {
 			player.pause();
 		}
 	}
 	
-	public synchronized void resume() {
+	public void resume() {
 		if (player != null) {
-			player.play();
+			player.start();
 			player.setLooping(looping);
 		}
 	}
 	
-	public synchronized void stop() {
+	public void stop() {
 		if (player != null) {
-			player.stop();
-			player.dispose();
+			try {
+				player.stop();
+				player.release();
+			} catch ( Exception e ){
+				Game.reportException(e);
+			}
 			player = null;
 		}
 	}
 	
-	public synchronized void volume( float value ) {
+	public void volume( float value ) {
 		volume = value;
 		if (player != null) {
-			player.setVolume( value );
+			player.setVolume( value, value );
 		}
 	}
 	
-	public synchronized boolean isPlaying() {
+	public boolean isPlaying() {
 		return player != null && player.isPlaying();
 	}
 	
-	public synchronized void enable( boolean value ) {
+	public void enable( boolean value ) {
 		enabled = value;
 		if (isPlaying() && !value) {
 			stop();
@@ -110,8 +130,34 @@ public enum Music {
 		}
 	}
 	
-	public synchronized boolean isEnabled() {
+	public boolean isEnabled() {
 		return enabled;
 	}
 	
+	public static final PhoneStateListener callMute = new PhoneStateListener(){
+		
+		@Override
+		public void onCallStateChanged(int state, String incomingNumber)
+		{
+			if( state == TelephonyManager.CALL_STATE_RINGING ) {
+				INSTANCE.pause();
+				
+			} else if( state == TelephonyManager.CALL_STATE_IDLE ) {
+				if (!Game.instance.isPaused()) {
+					INSTANCE.resume();
+				}
+			}
+			
+			super.onCallStateChanged(state, incomingNumber);
+		}
+	};
+	
+	public static void setMuteListener(){
+		//versions lower than this require READ_PHONE_STATE permission
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			TelephonyManager mgr =
+					(TelephonyManager) Game.instance.getSystemService(Activity.TELEPHONY_SERVICE);
+			mgr.listen(Music.callMute, PhoneStateListener.LISTEN_CALL_STATE);
+		}
+	}
 }

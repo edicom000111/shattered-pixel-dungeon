@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 package com.watabou.glwrap;
 
-import com.badlogic.gdx.Gdx;
+import android.opengl.GLES20;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -36,7 +36,9 @@ public class Vertexbuffer {
 
 	public Vertexbuffer( FloatBuffer vertices ) {
 		synchronized (buffers) {
-			id = Gdx.gl.glGenBuffer();
+			int[] ptr = new int[1];
+			GLES20.glGenBuffers(1, ptr, 0);
+			id = ptr[0];
 
 			this.vertices = vertices;
 			buffers.add(this);
@@ -78,9 +80,9 @@ public class Vertexbuffer {
 		bind();
 
 		if (updateStart == 0 && updateEnd == vertices.limit()){
-			Gdx.gl.glBufferData(Gdx.gl.GL_ARRAY_BUFFER, vertices.limit()*4, vertices, Gdx.gl.GL_DYNAMIC_DRAW);
+			GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, vertices.limit()*4, vertices, GLES20.GL_DYNAMIC_DRAW);
 		} else {
-			Gdx.gl.glBufferSubData(Gdx.gl.GL_ARRAY_BUFFER, updateStart*4, (updateEnd - updateStart)*4, vertices);
+			GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, updateStart*4, (updateEnd - updateStart)*4, vertices);
 		}
 
 		release();
@@ -88,16 +90,16 @@ public class Vertexbuffer {
 	}
 
 	public void bind(){
-		Gdx.gl.glBindBuffer(Gdx.gl.GL_ARRAY_BUFFER, id);
+		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, id);
 	}
 
 	public void release(){
-		Gdx.gl.glBindBuffer(Gdx.gl.GL_ARRAY_BUFFER, 0);
+		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
 	}
 
 	public void delete(){
 		synchronized (buffers) {
-			Gdx.gl.glDeleteBuffer( id );
+			GLES20.glDeleteBuffers(1, new int[]{id}, 0);
 			buffers.remove(this);
 		}
 	}

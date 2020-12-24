@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard;
 
-import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Imp;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.ImpShopkeeper;
@@ -29,9 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.ShopRoom;
-import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.watabou.utils.Bundle;
-import com.watabou.utils.Point;
 
 //shops probably shouldn't extend special room, because of cases like this.
 public class ImpShopRoom extends ShopRoom {
@@ -65,7 +62,9 @@ public class ImpShopRoom extends ShopRoom {
 		}
 
 		if (Imp.Quest.isCompleted()){
-			spawnShop(level);
+			impSpawned = true;
+			placeItems(level);
+			placeShopkeeper(level);
 		} else {
 			impSpawned = false;
 		}
@@ -77,20 +76,9 @@ public class ImpShopRoom extends ShopRoom {
 
 		int pos = level.pointToCell(center());
 
-		for (Point p : getPoints()){
-			if (level.map[level.pointToCell(p)] == Terrain.PEDESTAL){
-				pos = level.pointToCell(p);
-				break;
-			}
-		}
-
 		Mob shopkeeper = new ImpShopkeeper();
 		shopkeeper.pos = pos;
-		if (ShatteredPixelDungeon.scene() instanceof GameScene) {
-			GameScene.add(shopkeeper);
-		} else {
-			level.mobs.add(shopkeeper);
-		}
+		level.mobs.add( shopkeeper );
 
 	}
 
@@ -100,14 +88,9 @@ public class ImpShopRoom extends ShopRoom {
 		return connected.isEmpty() ? new Door(left, top+2) : super.entrance();
 	}
 
-	public void spawnShop(Level level){
+	private void spawnShop(Level level){
 		impSpawned = true;
-		placeShopkeeper(level);
-		placeItems(level);
-	}
-
-	public boolean shopSpawned(){
-		return impSpawned;
+		super.paint(level);
 	}
 
 	private static final String IMP = "imp_spawned";
@@ -129,7 +112,9 @@ public class ImpShopRoom extends ShopRoom {
 		super.onLevelLoad(level);
 
 		if (Imp.Quest.isCompleted() && !impSpawned){
-			spawnShop(level);
+			impSpawned = true;
+			placeItems(level);
+			placeShopkeeper(level);
 		}
 	}
 }

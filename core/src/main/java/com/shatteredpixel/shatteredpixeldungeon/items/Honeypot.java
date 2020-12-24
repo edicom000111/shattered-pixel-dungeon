@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.tweeners.AlphaTweener;
+import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
@@ -94,17 +95,18 @@ public class Honeypot extends Item {
 	public Item shatter( Char owner, int pos ) {
 		
 		if (Dungeon.level.heroFOV[pos]) {
-			Sample.INSTANCE.play( Assets.Sounds.SHATTER );
+			Sample.INSTANCE.play( Assets.SND_SHATTER );
 			Splash.at( pos, 0xffd500, 5 );
 		}
 		
 		int newPos = pos;
 		if (Actor.findChar( pos ) != null) {
-			ArrayList<Integer> candidates = new ArrayList<>();
+			ArrayList<Integer> candidates = new ArrayList<Integer>();
+			boolean[] passable = Dungeon.level.passable;
 			
 			for (int n : PathFinder.NEIGHBOURS4) {
 				int c = pos + n;
-				if (!Dungeon.level.solid[c] && Actor.findChar( c ) == null) {
+				if (passable[c] && Actor.findChar( c ) == null) {
 					candidates.add( c );
 				}
 			}
@@ -125,7 +127,7 @@ public class Honeypot extends Item {
 			bee.sprite.alpha( 0 );
 			bee.sprite.parent.add( new AlphaTweener( bee.sprite, 1, 0.15f ) );
 			
-			Sample.INSTANCE.play( Assets.Sounds.BEE );
+			Sample.INSTANCE.play( Assets.SND_BEE );
 			return new ShatteredPot();
 		} else {
 			return this;
@@ -143,7 +145,7 @@ public class Honeypot extends Item {
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		return 30 * quantity;
 	}
 
@@ -186,12 +188,6 @@ public class Honeypot extends Item {
 		public void dropPot( Char holder, int dropPos ){
 			for (Bee bee : findBees(holder)){
 				updateBee(bee, dropPos, null);
-			}
-		}
-
-		public void destroyPot( int potPos ){
-			for (Bee bee : findBees(potPos)){
-				updateBee(bee, -1, null);
 			}
 		}
 
@@ -241,7 +237,7 @@ public class Honeypot extends Item {
 		}
 		
 		@Override
-		public int value() {
+		public int price() {
 			return 5 * quantity;
 		}
 	}

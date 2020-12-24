@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,16 +21,28 @@
 
 package com.watabou.gltextures;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Pixmap;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
 import com.watabou.glwrap.Texture;
 import com.watabou.noosa.Game;
 
 import java.util.HashMap;
 
 public class TextureCache {
+
+	public static Context context;
 	
 	private static HashMap<Object,SmartTexture> all = new HashMap<>();
+	
+	// No dithering, no scaling, 32 bits per pixel
+	private static BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+	static {
+		bitmapOptions.inScaled = false;
+		bitmapOptions.inDither = false;
+		bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
+	}
 
 	public synchronized static SmartTexture createSolid( int color ) {
 		final String key = "1x1:" + color;
@@ -40,13 +52,11 @@ public class TextureCache {
 			return all.get( key );
 			
 		} else {
+		
+			Bitmap bmp = Bitmap.createBitmap( 1, 1, Bitmap.Config.ARGB_8888 );
+			bmp.eraseColor( color );
 			
-			Pixmap pixmap =new Pixmap( 1, 1, Pixmap.Format.RGBA8888 );
-			// In the rest of the code ARGB is used
-			pixmap.setColor( (color << 8) | (color >>> 24) );
-			pixmap.fill();
-			
-			SmartTexture tx = new SmartTexture( pixmap );
+			SmartTexture tx = new SmartTexture( bmp );
 			all.put( key, tx );
 			
 			return tx;
@@ -62,13 +72,12 @@ public class TextureCache {
 			return all.get( key );
 			
 		} else {
-			
-			Pixmap pixmap = new Pixmap( colors.length, 1, Pixmap.Format.RGBA8888);
+		
+			Bitmap bmp = Bitmap.createBitmap( colors.length, 1, Bitmap.Config.ARGB_8888 );
 			for (int i=0; i < colors.length; i++) {
-				// In the rest of the code ARGB is used
-				pixmap.drawPixel( i, 0, (colors[i] << 8) | (colors[i] >>> 24) );
+				bmp.setPixel( i, 0, colors[i] );
 			}
-			SmartTexture tx = new SmartTexture( pixmap );
+			SmartTexture tx = new SmartTexture( bmp );
 
 			tx.filter( Texture.LINEAR, Texture.LINEAR );
 			tx.wrap( Texture.CLAMP, Texture.CLAMP );
@@ -125,22 +134,22 @@ public class TextureCache {
 		}
 	}
 	
-	public static Pixmap getBitmap( Object src ) {
+	public static Bitmap getBitmap( Object src ) {
 		
 		try {
 			if (src instanceof Integer){
 				
-				//libGDX does not support android resource integer handles, and they were
-				//never used by the game anyway, should probably remove this entirely
-				return null;
+				return BitmapFactory.decodeResource(
+					context.getResources(), (Integer)src, bitmapOptions );
 				
 			} else if (src instanceof String) {
 				
-				return new Pixmap(Gdx.files.internal((String)src));
+				return BitmapFactory.decodeStream(
+					context.getAssets().open( (String)src ), null, bitmapOptions );
 				
-			} else if (src instanceof Pixmap) {
+			} else if (src instanceof Bitmap) {
 				
-				return (Pixmap)src;
+				return (Bitmap)src;
 				
 			} else {
 				

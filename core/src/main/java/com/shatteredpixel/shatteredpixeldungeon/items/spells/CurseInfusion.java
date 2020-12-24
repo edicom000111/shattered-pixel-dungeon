@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
-import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -49,7 +48,7 @@ public class CurseInfusion extends InventorySpell {
 	protected void onItemSelected(Item item) {
 		
 		CellEmitter.get(curUser.pos).burst(ShadowParticle.UP, 5);
-		Sample.INSTANCE.play(Assets.Sounds.CURSED);
+		Sample.INSTANCE.play(Assets.SND_CURSED);
 		
 		item.cursed = true;
 		if (item instanceof MeleeWeapon || item instanceof SpiritBow) {
@@ -75,12 +74,11 @@ public class CurseInfusion extends InventorySpell {
 			((Wand) item).curseInfusionBonus = true;
 			((Wand) item).updateLevel();
 		}
-		Badges.validateItemLevelAquired(item);
 		updateQuickslot();
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		//prices of ingredients, divided by output quantity
 		return Math.round(quantity * ((30 + 100) / 3f));
 	}

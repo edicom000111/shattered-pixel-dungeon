@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,31 +22,29 @@
 package com.shatteredpixel.shatteredpixeldungeon.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
-import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.effects.ShadowBox;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
-import com.watabou.input.KeyBindings;
-import com.watabou.input.KeyEvent;
-import com.watabou.input.PointerEvent;
+import com.watabou.input.Keys;
+import com.watabou.input.Keys.Key;
+import com.watabou.input.Touchscreen.Touch;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.NinePatch;
-import com.watabou.noosa.PointerArea;
+import com.watabou.noosa.TouchArea;
 import com.watabou.utils.Signal;
 
-public class Window extends Group implements Signal.Listener<KeyEvent> {
+public class Window extends Group implements Signal.Listener<Key> {
 
 	protected int width;
 	protected int height;
 
 	protected int yOffset;
 	
-	protected PointerArea blocker;
+	protected TouchArea blocker;
 	protected ShadowBox shadow;
 	protected NinePatch chrome;
-
-	public static final int WHITE = 0xFFFFFF;
+	
 	public static final int TITLE_COLOR = 0xFFFF44;
 	public static final int SHPX_COLOR = 0x33BB33;
 	
@@ -67,12 +65,12 @@ public class Window extends Group implements Signal.Listener<KeyEvent> {
 
 		this.yOffset = yOffset;
 		
-		blocker = new PointerArea( 0, 0, PixelScene.uiCamera.width, PixelScene.uiCamera.height ) {
+		blocker = new TouchArea( 0, 0, PixelScene.uiCamera.width, PixelScene.uiCamera.height ) {
 			@Override
-			protected void onClick( PointerEvent event ) {
+			protected void onClick( Touch touch ) {
 				if (Window.this.parent != null && !Window.this.chrome.overlapsScreenPoint(
-					(int) event.current.x,
-					(int) event.current.y )) {
+					(int)touch.current.x,
+					(int)touch.current.y )) {
 					
 					onBackPressed();
 				}
@@ -114,7 +112,7 @@ public class Window extends Group implements Signal.Listener<KeyEvent> {
 				camera.y / camera.zoom,
 				chrome.width(), chrome.height );
 
-		KeyEvent.addKeyListener( this );
+		Keys.event.add( this );
 	}
 	
 	public void resize( int w, int h ) {
@@ -153,24 +151,29 @@ public class Window extends Group implements Signal.Listener<KeyEvent> {
 		super.destroy();
 		
 		Camera.remove( camera );
-		KeyEvent.removeKeyListener( this );
+		Keys.event.remove( this );
 	}
 
 	@Override
-	public boolean onSignal( KeyEvent event ) {
-		if (event.pressed) {
-			if (KeyBindings.getActionForKey( event ) == SPDAction.BACK){
+	public void onSignal( Key key ) {
+		if (key.pressed) {
+			switch (key.code) {
+			case Keys.BACK:
 				onBackPressed();
+				break;
+			case Keys.MENU:
+				onMenuPressed();
+				break;
 			}
 		}
 		
-		//TODO currently always eats the key event as windows always take full focus
-		// if they are ever made more flexible, might not want to do this in all cases
-		return true;
+		Keys.event.cancel();
 	}
 	
 	public void onBackPressed() {
 		hide();
 	}
-
+	
+	public void onMenuPressed() {
+	}
 }

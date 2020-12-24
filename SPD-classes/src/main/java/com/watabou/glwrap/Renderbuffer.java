@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,18 +21,20 @@
 
 package com.watabou.glwrap;
 
-import com.badlogic.gdx.Gdx;
+import android.opengl.GLES20;
 
 public class Renderbuffer {
 
-	public static final int RGBA8		= Gdx.gl.GL_RGBA;	// ?
-	public static final int DEPTH16		= Gdx.gl.GL_DEPTH_COMPONENT16;
-	public static final int STENCIL8	= Gdx.gl.GL_STENCIL_INDEX8;
+	public static final int RGBA8		= GLES20.GL_RGBA;	// ?
+	public static final int DEPTH16		= GLES20.GL_DEPTH_COMPONENT16;
+	public static final int STENCIL8	= GLES20.GL_STENCIL_INDEX8;
 	
 	private int id;
 	
 	public Renderbuffer() {
-		id = Gdx.gl.glGenRenderbuffer();
+		int[] buffers = new int[1];
+		GLES20.glGenRenderbuffers( 1, buffers, 0 );
+		id = buffers[0];
 	}
 	
 	public int id() {
@@ -40,14 +42,15 @@ public class Renderbuffer {
 	}
 	
 	public void bind() {
-		Gdx.gl.glBindRenderbuffer( Gdx.gl.GL_RENDERBUFFER, id );
+		GLES20.glBindRenderbuffer( GLES20.GL_RENDERBUFFER, id );
 	}
 	
 	public void delete() {
-		Gdx.gl.glDeleteRenderbuffer( id );
+		int[] buffers = {id};
+		GLES20.glDeleteRenderbuffers( 1, buffers, 0 );
 	}
 	
 	public void storage( int format, int width, int height ) {
-		Gdx.gl.glRenderbufferStorage( Gdx.gl.GL_RENDERBUFFER, format , width, height );
+		GLES20.glRenderbufferStorage( GLES20.GL_RENDERBUFFER, format , width, height );
 	}
 }

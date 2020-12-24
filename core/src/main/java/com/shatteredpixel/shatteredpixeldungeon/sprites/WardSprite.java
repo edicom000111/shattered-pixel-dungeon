@@ -2,7 +2,6 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
-import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Beam;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
@@ -17,7 +16,7 @@ public class WardSprite extends MobSprite {
 	public WardSprite(){
 		super();
 
-		texture(Assets.Sprites.WARDS);
+		texture(Assets.WARDS);
 
 		tierIdles[1] = new Animation( 1, true );
 		tierIdles[1].frames(texture.uvRect(0, 0, 9, 10));
@@ -72,25 +71,6 @@ public class WardSprite extends MobSprite {
 		} );
 	}
 
-	@Override
-	public void resetColor() {
-		super.resetColor();
-		if (ch instanceof WandOfWarding.Ward){
-			WandOfWarding.Ward ward = (WandOfWarding.Ward) ch;
-			if (ward.tier <= 3){
-				brightness(Math.max(0.2f, 1f - (ward.totalZaps / (float)(2*ward.tier-1))));
-			}
-		}
-	}
-
-	public void linkVisuals(Char ch ){
-		
-		if (ch == null) return;
-		
-		updateTier( ((WandOfWarding.Ward)ch).tier );
-		
-	}
-
 	public void updateTier(int tier){
 
 		idle = tierIdles[tier];
@@ -103,8 +83,6 @@ public class WardSprite extends MobSprite {
 			parent.sendToBack(this);
 		}
 
-		resetColor();
-		if (ch != null) place(ch.pos);
 		idle();
 
 		if (tier <= 3){
@@ -116,6 +94,9 @@ public class WardSprite extends MobSprite {
 			perspectiveRaise = 6 / 16f; //6 pixels
 		}
 
+		if (ch != null) {
+			place(ch.pos);
+		}
 	}
 
 	private float baseY = Float.NaN;
@@ -130,15 +111,11 @@ public class WardSprite extends MobSprite {
 	public void update() {
 		super.update();
 		//if tier is greater than 3
-		if (perspectiveRaise >= 6 / 16f && !paused){
+		if (perspectiveRaise >= 6 / 16f){
 			if (Float.isNaN(baseY)) baseY = y;
 			y = baseY + (float) Math.sin(Game.timeTotal);
 			shadowOffset = 0.25f - 0.8f*(float) Math.sin(Game.timeTotal);
 		}
 	}
 
-	@Override
-	public int blood() {
-		return 0xFFCC33FF;
-	}
 }

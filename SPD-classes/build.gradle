@@ -1,15 +1,10 @@
-apply plugin: 'java-library'
+apply plugin: 'com.android.library'
 
-[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
-sourceCompatibility = targetCompatibility = appJavaCompatibility
+android {
+    compileSdkVersion appAndroidCompileSDK
 
-dependencies {
-    //TODO migrate this to implementation from api
-    //in order to do this I have to remove 100% of libGDX API access from core
-    api "com.badlogicgames.gdx:gdx:$gdxVersion"
-    implementation "com.badlogicgames.gdx:gdx-controllers:$gdxVersion"
-    implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
-
-    //noinspection GradleDependency , later JSON versions cause crashes on old versions of android
-    implementation "org.json:json:20170516"
+    defaultConfig {
+        //noinspection MinSdkTooLow
+        minSdkVersion appAndroidMinSDK
+    }
 }

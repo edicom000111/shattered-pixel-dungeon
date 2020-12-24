@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,13 +52,13 @@ public class IconButton extends Button {
 	}
 	
 	@Override
-	protected void onPointerDown() {
+	protected void onTouchDown() {
 		if (icon != null) icon.brightness( 1.5f );
-		Sample.INSTANCE.play( Assets.Sounds.CLICK );
+		Sample.INSTANCE.play( Assets.SND_CLICK );
 	}
 	
 	@Override
-	protected void onPointerUp() {
+	protected void onTouchUp() {
 		if (icon != null) icon.resetColor();
 	}
 	

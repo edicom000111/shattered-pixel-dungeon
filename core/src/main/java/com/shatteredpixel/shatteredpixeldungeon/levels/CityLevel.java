@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CorrosionTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CursingTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DisarmingTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DisintegrationTrap;
-import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DistortionTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ExplosiveTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.FlashingTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.FrostTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GuardianTrap;
@@ -57,27 +57,25 @@ public class CityLevel extends RegularLevel {
 	}
 	
 	@Override
-	protected int standardRooms(boolean forceMax) {
-		if (forceMax) return 10;
-		//7 to 10, average 8.0
+	protected int standardRooms() {
+		//7 to 10, average 7.9
 		return 7+Random.chances(new float[]{4, 3, 2, 1});
 	}
 	
 	@Override
-	protected int specialRooms(boolean forceMax) {
-		if (forceMax) return 3;
+	protected int specialRooms() {
 		//2 to 3, average 2.33
 		return 2 + Random.chances(new float[]{2, 1});
 	}
 	
 	@Override
 	public String tilesTex() {
-		return Assets.Environment.TILES_CITY;
+		return Assets.TILES_CITY;
 	}
 	
 	@Override
 	public String waterTex() {
-		return Assets.Environment.WATER_CITY;
+		return Assets.WATER_CITY;
 	}
 	
 	@Override
@@ -90,18 +88,18 @@ public class CityLevel extends RegularLevel {
 	
 	@Override
 	protected Class<?>[] trapClasses() {
-		return new Class[]{
-				FrostTrap.class, StormTrap.class, CorrosionTrap.class, BlazingTrap.class, DisintegrationTrap.class,
-				RockfallTrap.class, FlashingTrap.class, GuardianTrap.class, WeakeningTrap.class,
-				DisarmingTrap.class, SummoningTrap.class, WarpingTrap.class, CursingTrap.class, PitfallTrap.class, DistortionTrap.class };
+		return new Class[]{ FrostTrap.class, StormTrap.class, CorrosionTrap.class, BlazingTrap.class, DisintegrationTrap.class,
+				ExplosiveTrap.class, RockfallTrap.class, FlashingTrap.class, GuardianTrap.class, WeakeningTrap.class,
+				SummoningTrap.class, WarpingTrap.class, CursingTrap.class,
+				PitfallTrap.class, DisarmingTrap.class };
 	}
 
 	@Override
 	protected float[] trapChances() {
-		return new float[]{
+		return new float[]{ 8, 8, 8, 8, 8,
 				4, 4, 4, 4, 4,
-				2, 2, 2, 2,
-				1, 1, 1, 1, 1, 1 };
+				2, 2, 2,
+				1, 1 };
 	}
 	
 	@Override

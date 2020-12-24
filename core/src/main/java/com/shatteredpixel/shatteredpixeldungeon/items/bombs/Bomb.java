@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.bombs;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -54,7 +55,6 @@ import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -135,7 +135,7 @@ public class Bomb extends Item {
 		//We're blowing up, so no need for a fuse anymore.
 		this.fuse = null;
 
-		Sample.INSTANCE.play( Assets.Sounds.BLAST );
+		Sample.INSTANCE.play( Assets.SND_BLAST );
 
 		if (explodesDestructively()) {
 			
@@ -172,12 +172,6 @@ public class Bomb extends Item {
 			}
 			
 			for (Char ch : affected){
-
-				//if they have already been killed by another bomb
-				if(!ch.isAlive()){
-					continue;
-				}
-
 				int dmg = Random.NormalIntRange(5 + Dungeon.depth, 10 + Dungeon.depth*2);
 
 				//those not at the center of the blast take less damage
@@ -228,7 +222,7 @@ public class Bomb extends Item {
 	}
 
 	@Override
-	public int value() {
+	public int price() {
 		return 20 * quantity;
 	}
 	
@@ -279,7 +273,7 @@ public class Bomb extends Item {
 			}
 
 			//look for our bomb, remove it from its heap, and blow it up.
-			for (Heap heap : Dungeon.level.heaps.valueList()) {
+			for (Heap heap : Dungeon.level.heaps.values()) {
 				if (heap.items.contains(bomb)) {
 
 					//FIXME this is a bit hacky, might want to generalize the functionality
@@ -290,7 +284,10 @@ public class Bomb extends Item {
 
 					} else {
 
-						heap.remove(bomb);
+						heap.items.remove(bomb);
+						if (heap.items.isEmpty()) {
+							heap.destroy();
+						}
 
 						bomb.explode(heap.pos);
 					}
@@ -402,7 +399,11 @@ public class Bomb extends Item {
 			for (Item i : ingredients){
 				i.quantity(i.quantity()-1);
 				if (validIngredients.containsKey(i.getClass())){
-					result = Reflection.newInstance(validIngredients.get(i.getClass()));
+					try {
+						result = validIngredients.get(i.getClass()).newInstance();
+					} catch (Exception e) {
+						ShatteredPixelDungeon.reportException(e);
+					}
 				}
 			}
 			
@@ -413,7 +414,11 @@ public class Bomb extends Item {
 		public Item sampleOutput(ArrayList<Item> ingredients) {
 			for (Item i : ingredients){
 				if (validIngredients.containsKey(i.getClass())){
-					return Reflection.newInstance(validIngredients.get(i.getClass()));
+					try {
+						return validIngredients.get(i.getClass()).newInstance();
+					} catch (Exception e) {
+						ShatteredPixelDungeon.reportException(e);
+					}
 				}
 			}
 			return null;

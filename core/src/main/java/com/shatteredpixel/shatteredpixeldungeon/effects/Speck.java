@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -82,28 +82,12 @@ public class Speck extends Image {
 	public Speck() {
 		super();
 		
-		texture( Assets.Effects.SPECKS );
+		texture( Assets.SPECKS );
 		if (film == null) {
 			film = new TextureFilm( texture, SIZE, SIZE );
 		}
 		
 		origin.set( SIZE / 2f );
-	}
-
-	public Speck image( int type ){
-		reset(0, 0, 0, type);
-
-		left = lifespan = Float.POSITIVE_INFINITY;
-		this.type = -1;
-
-		resetColor();
-		scale.set( 1 );
-		speed.set( 0 );
-		acc.set( 0 );
-		angle = 0;
-		angularSpeed = 0;
-
-		return this;
 	}
 	
 	public void reset( int index, float x, float y, int type ) {
@@ -240,7 +224,7 @@ public class Speck extends Image {
 			
 		case RATTLE:
 			lifespan = 0.5f;
-			speed.set( 0, -100 );
+			speed.set( 0, -200 );
 			acc.set( 0, -2 * speed.y / lifespan );
 			angle = Random.Float( 360 );
 			angularSpeed = 360;
@@ -259,7 +243,7 @@ public class Speck extends Image {
 			scale.set( Random.Float( 1, 2 ) );
 			speed.set( 0, 64 );
 			lifespan = 0.2f;
-			this.y -= speed.y * lifespan;
+			y -= speed.y * lifespan;
 			break;
 			
 		case NOTE:
@@ -287,7 +271,7 @@ public class Speck extends Image {
 			break;
 			
 		case STEAM:
-			speed.y = -Random.Float( 10, 15 );
+			speed.y = -Random.Float( 20, 30 );
 			angularSpeed = Random.Float( +180 );
 			angle = Random.Float( 360 );
 			lifespan = 1f;

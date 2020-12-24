@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,10 +76,10 @@ public class WandOfTransfusion extends Wand {
 			//heals/shields an ally or a charmed enemy while damaging self
 			if (ch.alignment == Char.Alignment.ALLY || ch.buff(Charm.class) != null){
 				
-				// 5% of max hp
-				int selfDmg = Math.round(curUser.HT*0.05f);
+				// 10% of max hp
+				int selfDmg = Math.round(curUser.HT*0.10f);
 				
-				int healing = selfDmg + 3*buffedLvl();
+				int healing = selfDmg + 3*level();
 				int shielding = (ch.HP + healing) - ch.HT;
 				if (shielding > 0){
 					healing -= shielding;
@@ -90,7 +90,7 @@ public class WandOfTransfusion extends Wand {
 				
 				ch.HP += healing;
 				
-				ch.sprite.emitter().burst(Speck.factory(Speck.HEALING), 2 + buffedLvl() / 2);
+				ch.sprite.emitter().burst(Speck.factory(Speck.HEALING), 2 + level() / 2);
 				ch.sprite.showStatus(CharSprite.POSITIVE, "+%dHP", healing + shielding);
 				
 				if (!freeCharge) {
@@ -104,20 +104,18 @@ public class WandOfTransfusion extends Wand {
 				
 				//charms living enemies
 				if (!ch.properties().contains(Char.Property.UNDEAD)) {
-					Charm charm = Buff.affect(ch, Charm.class, Charm.DURATION/2f);
-					charm.object = curUser.id();
-					charm.ignoreHeroAllies = true;
-					ch.sprite.centerEmitter().start( Speck.factory( Speck.HEART ), 0.2f, 3 );
+					Buff.affect(ch, Charm.class, 5).object = curUser.id();
+					ch.sprite.centerEmitter().start( Speck.factory( Speck.HEART ), 0.2f, 3 + level()/2 );
 				
 				//harms the undead
 				} else {
-					ch.damage(Random.NormalIntRange(3 + buffedLvl()/2, 6+buffedLvl()), this);
-					ch.sprite.emitter().start(ShadowParticle.UP, 0.05f, 10 + buffedLvl());
-					Sample.INSTANCE.play(Assets.Sounds.BURNING);
+					ch.damage(Random.NormalIntRange(3 + level()/2, 6+level()), this);
+					ch.sprite.emitter().start(ShadowParticle.UP, 0.05f, 10 + level());
+					Sample.INSTANCE.play(Assets.SND_BURNING);
 				}
 				
 				//and grants a self shield
-				Buff.affect(curUser, Barrier.class).setShield((5 + buffedLvl()));
+				Buff.affect(curUser, Barrier.class).setShield((5 + 2*level()));
 
 			}
 			
@@ -137,11 +135,18 @@ public class WandOfTransfusion extends Wand {
 	}
 
 	@Override
+	protected int initialCharges() {
+		return 1;
+	}
+
+	@Override
 	public void onHit(MagesStaff staff, Char attacker, Char defender, int damage) {
-		if (defender.buff(Charm.class) != null && defender.buff(Charm.class).object == attacker.id()){
-			//grants a free use of the staff and shields self
+		// lvl 0 - 10%
+		// lvl 1 - 18%
+		// lvl 2 - 25%
+		if (Random.Int( level() + 10 ) >= 9){
+			//grants a free use of the staff
 			freeCharge = true;
-			Buff.affect(curUser, Barrier.class).setShield(2*(5 + buffedLvl()));
 			GLog.p( Messages.get(this, "charged") );
 			attacker.sprite.emitter().burst(BloodParticle.BURST, 20);
 		}
@@ -162,15 +167,6 @@ public class WandOfTransfusion extends Wand {
 		particle.speed.polar( Random.Float(PointF.PI2), 2f );
 		particle.setSize( 1f, 2f);
 		particle.radiateXY(0.5f);
-	}
-
-	@Override
-	public String statsDesc() {
-		int selfDMG = Math.round(Dungeon.hero.HT*0.10f);
-		if (levelKnown)
-			return Messages.get(this, "stats_desc", selfDMG, selfDMG + 3*buffedLvl(), 5+2*buffedLvl(), 3+buffedLvl()/2, 6+ buffedLvl());
-		else
-			return Messages.get(this, "stats_desc", selfDMG, selfDMG, 5, 3, 6);
 	}
 
 	private static final String FREECHARGE = "freecharge";

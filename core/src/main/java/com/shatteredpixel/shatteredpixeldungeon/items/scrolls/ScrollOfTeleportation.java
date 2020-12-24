@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
@@ -33,8 +34,9 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.SpecialRoom;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.BArray;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
@@ -48,18 +50,45 @@ import java.util.ArrayList;
 public class ScrollOfTeleportation extends Scroll {
 
 	{
-		icon = ItemSpriteSheet.Icons.SCROLL_TELEPORT;
+		initials = 8;
 	}
 
 	@Override
 	public void doRead() {
 
-		Sample.INSTANCE.play( Assets.Sounds.READ );
+		Sample.INSTANCE.play( Assets.SND_READ );
+		Invisibility.dispel();
 		
 		teleportPreferringUnseen( curUser );
-		identify();
+		setKnown();
 
 		readAnimation();
+	}
+	
+	@Override
+	public void empoweredRead() {
+		
+		if (Dungeon.bossLevel()){
+			GLog.w( Messages.get(this, "no_tele") );
+			return;
+		}
+		
+		GameScene.selectCell(new CellSelector.Listener() {
+			@Override
+			public void onSelect(Integer target) {
+				if (target != null) {
+					//time isn't spent
+					((HeroSprite)curUser.sprite).read();
+					teleportToLocation(curUser, target);
+					
+				}
+			}
+			
+			@Override
+			public String prompt() {
+				return Messages.get(ScrollOfTeleportation.class, "prompt");
+			}
+		});
 	}
 	
 	public static void teleportToLocation(Hero hero, int pos){
@@ -72,47 +101,35 @@ public class ScrollOfTeleportation extends Scroll {
 		}
 		
 		appear( hero, pos );
-		Dungeon.level.occupyCell(hero );
+		if (!hero.flying) Dungeon.level.press( pos, hero );
 		Dungeon.observe();
 		GameScene.updateFog();
 		
 	}
 	
-	public static void teleportHero( Hero hero ) {
-		teleportChar( hero );
-	}
-	
-	public static void teleportChar( Char ch ) {
+	public static void teleportHero( Hero  hero ) {
 
-		if (Dungeon.bossLevel()){
-			GLog.w( Messages.get(ScrollOfTeleportation.class, "no_tele") );
-			return;
-		}
-		
 		int count = 10;
 		int pos;
 		do {
-			pos = Dungeon.level.randomRespawnCell( ch );
+			pos = Dungeon.level.randomRespawnCell();
 			if (count-- <= 0) {
 				break;
 			}
-		} while (pos == -1 || Dungeon.level.secret[pos]);
+		} while (pos == -1);
 		
-		if (pos == -1) {
+		if (pos == -1 || Dungeon.bossLevel()) {
 			
 			GLog.w( Messages.get(ScrollOfTeleportation.class, "no_tele") );
 			
 		} else {
 			
-			appear( ch, pos );
-			Dungeon.level.occupyCell( ch );
+			GLog.i( Messages.get(ScrollOfTeleportation.class, "tele") );
 			
-			if (ch == Dungeon.hero) {
-				GLog.i( Messages.get(ScrollOfTeleportation.class, "tele") );
-				
-				Dungeon.observe();
-				GameScene.updateFog();
-			}
+			appear( hero, pos );
+			if (!hero.flying) Dungeon.level.press( pos, hero );
+			Dungeon.observe();
+			GameScene.updateFog();
 			
 		}
 	}
@@ -146,7 +163,7 @@ public class ScrollOfTeleportation extends Scroll {
 			int cell;
 			for (Point p : r.charPlaceablePoints(level)){
 				cell = level.pointToCell(p);
-				if (level.passable[cell] && !level.visited[cell] && !level.secret[cell] && Actor.findChar(cell) == null){
+				if (level.passable[cell] && !level.visited[cell] && Actor.findChar(cell) == null){
 					candidates.add(cell);
 				}
 			}
@@ -175,9 +192,9 @@ public class ScrollOfTeleportation extends Scroll {
 			}
 			GLog.i( Messages.get(ScrollOfTeleportation.class, "tele") );
 			appear( hero, pos );
-			Dungeon.level.occupyCell(hero );
+			if (!hero.flying) Dungeon.level.press( pos, hero );
 			if (secretDoor && level.map[doorPos] == Terrain.SECRET_DOOR){
-				Sample.INSTANCE.play( Assets.Sounds.SECRET );
+				Sample.INSTANCE.play( Assets.SND_SECRET );
 				int oldValue = Dungeon.level.map[doorPos];
 				GameScene.discoverTile( doorPos, oldValue );
 				Dungeon.level.discover( doorPos );
@@ -193,10 +210,6 @@ public class ScrollOfTeleportation extends Scroll {
 
 		ch.sprite.interruptMotion();
 
-		if (Dungeon.level.heroFOV[pos] || Dungeon.level.heroFOV[ch.pos]){
-			Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
-		}
-
 		ch.move( pos );
 		if (ch.pos == pos) ch.sprite.place( pos );
 
@@ -205,13 +218,12 @@ public class ScrollOfTeleportation extends Scroll {
 			ch.sprite.parent.add( new AlphaTweener( ch.sprite, 1, 0.4f ) );
 		}
 
-		if (Dungeon.level.heroFOV[pos] || ch == Dungeon.hero ) {
-			ch.sprite.emitter().start(Speck.factory(Speck.LIGHT), 0.2f, 3);
-		}
+		ch.sprite.emitter().start( Speck.factory(Speck.LIGHT), 0.2f, 3 );
+		Sample.INSTANCE.play( Assets.SND_TELEPORT );
 	}
 	
 	@Override
-	public int value() {
-		return isKnown() ? 30 * quantity : super.value();
+	public int price() {
+		return isKnown() ? 30 * quantity : super.price();
 	}
 }

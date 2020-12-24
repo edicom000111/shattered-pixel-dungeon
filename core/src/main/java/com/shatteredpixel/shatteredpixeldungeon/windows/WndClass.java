@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
 import com.watabou.noosa.Group;
+import com.watabou.noosa.RenderedText;
 
 public class WndClass extends WndTabbed {
 
@@ -112,9 +113,16 @@ public class WndClass extends WndTabbed {
 					pos += GAP;
 				}
 
-				RenderedTextBlock item = PixelScene.renderTextBlock( "-" + items[i], 6 );
+				RenderedText dot = PixelScene.renderText( "-", 6 );
+				dot.y = pos;
+				if (dotWidth == 0) {
+					dotWidth = dot.width();
+				}
+				add( dot );
+
+				RenderedTextMultiline item = PixelScene.renderMultiline( items[i], 6 );
 				item.maxWidth((int)(WIDTH - MARGIN * 2 - dotWidth));
-				item.setPos(0, pos);
+				item.setPos(dot.x + dot.width(), pos);
 				add( item );
 
 				pos += item.height();
@@ -155,7 +163,7 @@ public class WndClass extends WndTabbed {
 					break;
 			}
 
-			RenderedTextBlock text = PixelScene.renderTextBlock( 6 );
+			RenderedTextMultiline text = PixelScene.renderMultiline( 6 );
 			text.text( message, WIDTH - MARGIN * 2 );
 			text.setPos( MARGIN, MARGIN );
 			add( text );

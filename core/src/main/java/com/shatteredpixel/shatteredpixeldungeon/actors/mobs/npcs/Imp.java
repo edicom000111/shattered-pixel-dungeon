@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,9 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ImpSprite;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndImp;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndQuest;
-import com.watabou.noosa.Game;
 import com.watabou.utils.Bundle;
-import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
@@ -58,20 +56,21 @@ public class Imp extends NPC {
 		
 		if (!Quest.given && Dungeon.level.heroFOV[pos]) {
 			if (!seenBefore) {
-				yell( Messages.get(this, "hey", Dungeon.hero.name() ) );
+				yell( Messages.get(this, "hey", Dungeon.hero.givenName() ) );
 			}
-			Notes.add( Notes.Landmark.IMP );
 			seenBefore = true;
 		} else {
 			seenBefore = false;
 		}
+		
+		throwItem();
 		
 		return super.act();
 	}
 	
 	@Override
 	public int defenseSkill( Char enemy ) {
-		return INFINITE_EVASION;
+		return 1000;
 	}
 	
 	@Override
@@ -88,52 +87,39 @@ public class Imp extends NPC {
 	}
 	
 	@Override
-	public boolean interact(Char c) {
+	public boolean interact() {
 		
 		sprite.turnTo( pos, Dungeon.hero.pos );
-
-		if (c != Dungeon.hero){
-			return true;
-		}
-
 		if (Quest.given) {
 			
 			DwarfToken tokens = Dungeon.hero.belongings.getItem( DwarfToken.class );
-			if (tokens != null && (tokens.quantity() >= 5 || (!Quest.alternative && tokens.quantity() >= 4))) {
-				Game.runOnRenderThread(new Callback() {
-					@Override
-					public void call() {
-						GameScene.show( new WndImp( Imp.this, tokens ) );
-					}
-				});
+			if (tokens != null && (tokens.quantity() >= 8 || (!Quest.alternative && tokens.quantity() >= 6))) {
+				GameScene.show( new WndImp( this, tokens ) );
 			} else {
 				tell( Quest.alternative ?
-						Messages.get(this, "monks_2", Dungeon.hero.name())
-						: Messages.get(this, "golems_2", Dungeon.hero.name()) );
+						Messages.get(this, "monks_2", Dungeon.hero.givenName())
+						: Messages.get(this, "golems_2", Dungeon.hero.givenName()) );
 			}
 			
 		} else {
 			tell( Quest.alternative ? Messages.get(this, "monks_1") : Messages.get(this, "golems_1") );
 			Quest.given = true;
 			Quest.completed = false;
+			
 			Notes.add( Notes.Landmark.IMP );
 		}
 
-		return true;
+		return false;
 	}
 	
 	private void tell( String text ) {
-		Game.runOnRenderThread(new Callback() {
-			@Override
-			public void call() {
-				GameScene.show( new WndQuest( Imp.this, text ));
-			}
-		});
+		GameScene.show(
+			new WndQuest( this, text ));
 	}
 	
 	public void flee() {
 		
-		yell( Messages.get(this, "cya", Dungeon.hero.name()) );
+		yell( Messages.get(this, "cya", Dungeon.hero.givenName()) );
 		
 		destroy();
 		sprite.die();
@@ -198,7 +184,7 @@ public class Imp extends NPC {
 				
 				Imp npc = new Imp();
 				do {
-					npc.pos = level.randomRespawnCell( npc );
+					npc.pos = level.randomRespawnCell();
 				} while (
 						npc.pos == -1 ||
 						level.heaps.get( npc.pos ) != null ||
@@ -210,19 +196,7 @@ public class Imp extends NPC {
 				level.mobs.add( npc );
 				
 				spawned = true;
-
-				//always assigns monks on floor 17, golems on floor 19, and 50/50 between either on 18
-				switch (Dungeon.depth){
-					case 17: default:
-						alternative = true;
-						break;
-					case 18:
-						alternative = Random.Int(2) == 0;
-						break;
-					case 19:
-						alternative = false;
-						break;
-				}
+				alternative = Random.Int( 2 ) == 0;
 				
 				given = false;
 				

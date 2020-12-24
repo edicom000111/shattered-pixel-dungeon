@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ public class Toast extends Component {
 
 	protected NinePatch bg;
 	protected SimpleButton close;
-	protected RenderedTextBlock text;
+	protected RenderedTextMultiline text;
 
 	public Toast( String text ) {
 		super();
@@ -53,11 +53,11 @@ public class Toast extends Component {
 		close = new SimpleButton( Icons.get( Icons.CLOSE ) ) {
 			protected void onClick() {
 				onClose();
-			}
+			};
 		};
 		add( close );
 
-		text = PixelScene.renderTextBlock(8);
+		text = PixelScene.renderMultiline(8);
 		add( text );
 	}
 	
@@ -82,5 +82,5 @@ public class Toast extends Component {
 		text.text( txt );
 	}
 	
-	protected void onClose() {}
+	protected void onClose() {};
 }

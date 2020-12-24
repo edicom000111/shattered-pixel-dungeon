@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -180,17 +180,13 @@ public class NinePatch extends Visual {
 	}
 
 	public void flipHorizontal(boolean value) {
-		if (flipHorizontal != value){
-			flipHorizontal = value;
-			updateVertices();
-		}
+		flipHorizontal = value;
+		updateVertices();
 	}
 
 	public void flipVertical(boolean value) {
-		if (flipVertical != value) {
-			flipVertical = value;
-			updateVertices();
-		}
+		flipVertical = value;
+		updateVertices();
 	}
 	
 	public void size( float width, float height ) {

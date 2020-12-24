@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +22,9 @@
 package com.shatteredpixel.shatteredpixeldungeon.ui.changelist;
 
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
 import com.watabou.noosa.ColorBlock;
+import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.ui.Component;
 
 import java.util.ArrayList;
@@ -32,10 +33,10 @@ public class ChangeInfo extends Component {
 	
 	protected ColorBlock line;
 	
-	private RenderedTextBlock title;
+	private RenderedText title;
 	public boolean major;
 	
-	private RenderedTextBlock text;
+	private RenderedTextMultiline text;
 	
 	private ArrayList<ChangeButton> buttons = new ArrayList<>();
 	
@@ -43,11 +44,11 @@ public class ChangeInfo extends Component {
 		super();
 		
 		if (majorTitle){
-			this.title = PixelScene.renderTextBlock( title, 9 );
+			this.title = PixelScene.renderText( title, 9 );
 			line = new ColorBlock( 1, 1, 0xFF222222);
 			add(line);
 		} else {
-			this.title = PixelScene.renderTextBlock( title, 6 );
+			this.title = PixelScene.renderText( title, 6 );
 			line = new ColorBlock( 1, 1, 0xFF333333);
 			add(line);
 		}
@@ -56,7 +57,7 @@ public class ChangeInfo extends Component {
 		add(this.title);
 		
 		if (text != null && !text.equals("")){
-			this.text = PixelScene.renderTextBlock(text, 6);
+			this.text = PixelScene.renderMultiline(text, 6);
 			add(this.text);
 		}
 		
@@ -86,15 +87,13 @@ public class ChangeInfo extends Component {
 	
 	@Override
 	protected void layout() {
-		float posY = this.y + 3;
+		float posY = this.y + 2;
 		if (major) posY += 2;
 		
-		title.setPos(
-				x + (width - title.width()) / 2f,
-				posY
-		);
+		title.x = x + (width - title.width()) / 2f;
+		title.y = posY;
 		PixelScene.align( title );
-		posY += title.height() + 2;
+		posY += title.baseLine() + 2;
 		
 		if (text != null) {
 			text.maxWidth((int) width());

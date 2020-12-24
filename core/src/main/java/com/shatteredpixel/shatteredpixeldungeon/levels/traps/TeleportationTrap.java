@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ public class TeleportationTrap extends Trap {
 	public void activate() {
 
 		CellEmitter.get(pos).start(Speck.factory(Speck.LIGHT), 0.2f, 3);
-		Sample.INSTANCE.play( Assets.Sounds.TELEPORT );
+		Sample.INSTANCE.play( Assets.SND_TELEPORT );
 
 		Char ch = Actor.findChar( pos);
 		if (ch != null && !ch.flying) {
@@ -57,7 +57,7 @@ public class TeleportationTrap extends Trap {
 				int count = 10;
 				int pos;
 				do {
-					pos = Dungeon.level.randomRespawnCell( ch );
+					pos = Dungeon.level.randomRespawnCell();
 					if (count-- <= 0) {
 						break;
 					}
@@ -83,14 +83,12 @@ public class TeleportationTrap extends Trap {
 		Heap heap = Dungeon.level.heaps.get(pos);
 
 		if (heap != null){
-			int cell = Dungeon.level.randomRespawnCell( null );
+			int cell = Dungeon.level.randomRespawnCell();
 
 			Item item = heap.pickUp();
 
 			if (cell != -1) {
-				Heap dropped = Dungeon.level.drop( item, cell );
-				dropped.type = heap.type;
-				dropped.sprite.view( dropped );
+				Dungeon.level.drop( item, cell );
 			}
 		}
 	}

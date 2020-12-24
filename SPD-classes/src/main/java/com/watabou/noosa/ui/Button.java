@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,64 +21,44 @@
 
 package com.watabou.noosa.ui;
 
-import com.watabou.input.GameAction;
-import com.watabou.input.KeyBindings;
-import com.watabou.input.KeyEvent;
-import com.watabou.input.PointerEvent;
+import com.watabou.input.Touchscreen.Touch;
 import com.watabou.noosa.Game;
-import com.watabou.noosa.PointerArea;
-import com.watabou.utils.Signal;
+import com.watabou.noosa.TouchArea;
 
 public class Button extends Component {
 
 	public static float longClick = 1f;
 	
-	protected PointerArea hotArea;
+	protected TouchArea hotArea;
 	
 	protected boolean pressed;
 	protected float pressTime;
+	
 	protected boolean processed;
-
+	
 	@Override
 	protected void createChildren() {
-		hotArea = new PointerArea( 0, 0, 0, 0 ) {
+		hotArea = new TouchArea( 0, 0, 0, 0 ) {
 			@Override
-			protected void onPointerDown( PointerEvent event ) {
+			protected void onTouchDown(Touch touch) {
 				pressed = true;
 				pressTime = 0;
 				processed = false;
-				Button.this.onPointerDown();
-			}
+				Button.this.onTouchDown();
+			};
 			@Override
-			protected void onPointerUp( PointerEvent event ) {
+			protected void onTouchUp(Touch touch) {
 				pressed = false;
-				Button.this.onPointerUp();
-			}
+				Button.this.onTouchUp();
+			};
 			@Override
-			protected void onClick( PointerEvent event ) {
+			protected void onClick( Touch touch ) {
 				if (!processed) {
 					Button.this.onClick();
 				}
-			}
+			};
 		};
 		add( hotArea );
-		
-		KeyEvent.addKeyListener( keyListener = new Signal.Listener<KeyEvent>() {
-			@Override
-			public boolean onSignal ( KeyEvent event ) {
-				if ( active && event.pressed && KeyBindings.getActionForKey( event ) == keyAction()){
-					onClick();
-					return true;
-				}
-				return false;
-			}
-		});
-	}
-	
-	private Signal.Listener<KeyEvent> keyListener;
-	
-	public GameAction keyAction(){
-		return null;
 	}
 	
 	@Override
@@ -94,7 +74,7 @@ public class Button extends Component {
 
 					hotArea.reset();
 					processed = true;
-					onPointerUp();
+					onTouchUp();
 					
 					Game.vibrate( 50 );
 				}
@@ -102,12 +82,13 @@ public class Button extends Component {
 		}
 	}
 	
-	protected void onPointerDown() {}
-	protected void onPointerUp() {}
-	protected void onClick() {}
+	protected void onTouchDown() {};
+	protected void onTouchUp() {};
+	protected void onClick() {};
+	
 	protected boolean onLongClick() {
 		return false;
-	}
+	};
 	
 	@Override
 	protected void layout() {
@@ -116,11 +97,4 @@ public class Button extends Component {
 		hotArea.width = width;
 		hotArea.height = height;
 	}
-	
-	@Override
-	public synchronized void destroy () {
-		super.destroy();
-		KeyEvent.removeKeyListener( keyListener );
-	}
-	
 }

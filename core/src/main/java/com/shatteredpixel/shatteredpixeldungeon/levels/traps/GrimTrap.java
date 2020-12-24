@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,8 +40,12 @@ public class GrimTrap extends Trap {
 	{
 		color = GREY;
 		shape = LARGE_DOT;
-		
-		canBeHidden = false;
+	}
+
+	@Override
+	public Trap hide() {
+		//cannot hide this trap
+		return reveal();
 	}
 
 	@Override
@@ -50,14 +54,11 @@ public class GrimTrap extends Trap {
 
 		//find the closest char that can be aimed at
 		if (target == null){
-			float closestDist = Float.MAX_VALUE;
 			for (Char ch : Actor.chars()){
-				float curDist = Dungeon.level.trueDistance(pos, ch.pos);
-				if (ch.invisible > 0) curDist += 1000;
 				Ballistica bolt = new Ballistica(pos, ch.pos, Ballistica.PROJECTILE);
-				if (bolt.collisionPos == ch.pos && curDist < closestDist){
+				if (bolt.collisionPos == ch.pos &&
+						(target == null || Dungeon.level.trueDistance(pos, ch.pos) < Dungeon.level.trueDistance(pos, target.pos))){
 					target = ch;
-					closestDist = curDist;
 				}
 			}
 		}
@@ -96,13 +97,13 @@ public class GrimTrap extends Trap {
 								public void call() {
 									finalTarget.damage(finalDmg, trap);
 									if (finalTarget == Dungeon.hero) {
-										Sample.INSTANCE.play(Assets.Sounds.CURSED);
+										Sample.INSTANCE.play(Assets.SND_CURSED);
 										if (!finalTarget.isAlive()) {
 											Dungeon.fail( GrimTrap.class );
 											GLog.n( Messages.get(GrimTrap.class, "ondeath") );
 										}
 									} else {
-										Sample.INSTANCE.play(Assets.Sounds.BURNING);
+										Sample.INSTANCE.play(Assets.SND_BURNING);
 									}
 									finalTarget.sprite.emitter().burst(ShadowParticle.UP, 10);
 									Actor.remove(toRemove);
@@ -114,7 +115,7 @@ public class GrimTrap extends Trap {
 			});
 		} else {
 			CellEmitter.get(pos).burst(ShadowParticle.UP, 10);
-			Sample.INSTANCE.play(Assets.Sounds.BURNING);
+			Sample.INSTANCE.play(Assets.SND_BURNING);
 		}
 	}
 }

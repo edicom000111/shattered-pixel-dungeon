@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic;
 
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
@@ -37,7 +38,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTerror;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -111,9 +111,19 @@ public abstract class ExoticScroll extends Scroll {
 	}
 	
 	@Override
+	public void empoweredRead() {
+	
+	}
+	
+	@Override
 	//20 gold more than its none-exotic equivalent
-	public int value() {
-		return (Reflection.newInstance(exoToReg.get(getClass())).value() + 20) * quantity;
+	public int price() {
+		try {
+			return (exoToReg.get(getClass()).newInstance().price() + 20) * quantity;
+		} catch (Exception e){
+			ShatteredPixelDungeon.reportException(e);
+			return 0;
+		}
 	}
 	
 	public static class ScrollToExotic extends Recipe {
@@ -146,7 +156,11 @@ public abstract class ExoticScroll extends Scroll {
 			for (Item i : ingredients){
 				i.quantity(i.quantity()-1);
 				if (regToExo.containsKey(i.getClass())) {
-					result = Reflection.newInstance(regToExo.get(i.getClass()));
+					try {
+						result = regToExo.get(i.getClass()).newInstance();
+					} catch (Exception e) {
+						ShatteredPixelDungeon.reportException(e);
+					}
 				}
 			}
 			return result;
@@ -156,7 +170,11 @@ public abstract class ExoticScroll extends Scroll {
 		public Item sampleOutput(ArrayList<Item> ingredients) {
 			for (Item i : ingredients){
 				if (regToExo.containsKey(i.getClass())) {
-					return Reflection.newInstance(regToExo.get(i.getClass()));
+					try {
+						return regToExo.get(i.getClass()).newInstance();
+					} catch (Exception e) {
+						ShatteredPixelDungeon.reportException(e);
+					}
 				}
 			}
 			return null;

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,7 +44,6 @@ import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Sample;
-import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
 public class Chasm {
@@ -52,32 +51,27 @@ public class Chasm {
 	public static boolean jumpConfirmed = false;
 	
 	public static void heroJump( final Hero hero ) {
-		Game.runOnRenderThread(new Callback() {
-			@Override
-			public void call() {
-				GameScene.show(
-						new WndOptions( Messages.get(Chasm.class, "chasm"),
-								Messages.get(Chasm.class, "jump"),
-								Messages.get(Chasm.class, "yes"),
-								Messages.get(Chasm.class, "no") ) {
-							@Override
-							protected void onSelect( int index ) {
-								if (index == 0) {
-									jumpConfirmed = true;
-									hero.resume();
-								}
-							}
-						}
-				);
+		GameScene.show(
+			new WndOptions( Messages.get(Chasm.class, "chasm"),
+						Messages.get(Chasm.class, "jump"),
+						Messages.get(Chasm.class, "yes"),
+						Messages.get(Chasm.class, "no") ) {
+				@Override
+				protected void onSelect( int index ) {
+					if (index == 0) {
+						jumpConfirmed = true;
+						hero.resume();
+					}
+				}
 			}
-		});
+		);
 	}
 	
 	public static void heroFall( int pos ) {
 		
 		jumpConfirmed = false;
 				
-		Sample.INSTANCE.play( Assets.Sounds.FALLING );
+		Sample.INSTANCE.play( Assets.SND_FALLING );
 
 		Buff buff = Dungeon.hero.buff(TimekeepersHourglass.timeFreeze.class);
 		if (buff != null) buff.detach();
@@ -113,7 +107,7 @@ public class Chasm {
 		
 		Camera.main.shake( 4, 1f );
 
-		Dungeon.level.occupyCell(hero );
+		Dungeon.level.press( hero.pos, hero, true );
 		Buff.prolong( hero, Cripple.class, Cripple.DURATION );
 
 		//The lower the hero's HP, the more bleed and the less upfront damage.

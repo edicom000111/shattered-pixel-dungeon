@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,15 +22,14 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.armor;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
-import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
@@ -65,9 +64,7 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
-import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,8 +74,8 @@ public class Armor extends EquipableItem {
 	protected static final String AC_DETACH       = "DETACH";
 	
 	public enum Augment {
-		EVASION (2f , -1f),
-		DEFENSE (-2f, 1f),
+		EVASION (1.5f , -1f),
+		DEFENSE (-1.5f, 1f),
 		NONE	(0f   ,  0f);
 		
 		private float evasionFactor;
@@ -108,7 +105,7 @@ public class Armor extends EquipableItem {
 	public int tier;
 	
 	private static final int USES_TO_ID = 10;
-	private float usesLeftToID = USES_TO_ID;
+	private int usesLeftToID = USES_TO_ID;
 	private float availableUsesToID = USES_TO_ID/2f;
 	
 	public Armor( int tier ) {
@@ -142,6 +139,12 @@ public class Armor extends EquipableItem {
 		curseInfusionBonus = bundle.getBoolean( CURSE_INFUSION_BONUS );
 		seal = (BrokenSeal)bundle.get(SEAL);
 		
+		//pre-0.7.2 saves
+		if (bundle.contains( "unfamiliarity" )){
+			usesLeftToID = bundle.getInt( "unfamiliarity" );
+			availableUsesToID = USES_TO_ID/2f;
+		}
+		
 		augment = bundle.getEnum(AUGMENT, Augment.class);
 	}
 
@@ -173,17 +176,6 @@ public class Armor extends EquipableItem {
 			if (seal.level() > 0){
 				degrade();
 			}
-			if (seal.getGlyph() != null){
-				if (hero.hasTalent(Talent.RUNIC_TRANSFERENCE)
-						&& (Arrays.asList(Glyph.common).contains(seal.getGlyph().getClass())
-							|| Arrays.asList(Glyph.uncommon).contains(seal.getGlyph().getClass()))){
-					inscribe(null);
-				} else if (hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE) == 2){
-					inscribe(null);
-				} else {
-					seal.setGlyph(null);
-				}
-			}
 			GLog.i( Messages.get(Armor.class, "detach_seal") );
 			hero.sprite.operate(hero.pos);
 			if (!seal.collect()){
@@ -210,7 +202,7 @@ public class Armor extends EquipableItem {
 			
 			((HeroSprite)hero.sprite).updateArmor();
 			activate(hero);
-			Talent.onItemEquipped(hero, this);
+
 			hero.spendAndNext( time2equip( hero ) );
 			return true;
 			
@@ -233,9 +225,6 @@ public class Armor extends EquipableItem {
 			//doesn't trigger upgrading logic such as affecting curses/glyphs
 			level(level()+1);
 			Badges.validateItemLevelAquired(this);
-		}
-		if (seal.getGlyph() != null){
-			inscribe(seal.getGlyph());
 		}
 		if (isEquipped(Dungeon.hero)){
 			Buff.affect(Dungeon.hero, BrokenSeal.WarriorShield.class).setArmor(this);
@@ -276,14 +265,10 @@ public class Armor extends EquipableItem {
 	}
 
 	public final int DRMax(){
-		return DRMax(buffedLvl());
+		return DRMax(level());
 	}
 
 	public int DRMax(int lvl){
-		if (Dungeon.isChallenged(Challenges.NO_ARMOR)){
-			return 1 + tier + lvl + augment.defenseFactor(lvl);
-		}
-
 		int max = tier * (2 + lvl) + augment.defenseFactor(lvl);
 		if (lvl > max){
 			return ((lvl - max)+1)/2;
@@ -293,14 +278,10 @@ public class Armor extends EquipableItem {
 	}
 
 	public final int DRMin(){
-		return DRMin(buffedLvl());
+		return DRMin(level());
 	}
 
 	public int DRMin(int lvl){
-		if (Dungeon.isChallenged(Challenges.NO_ARMOR)){
-			return 0;
-		}
-
 		int max = DRMax(lvl);
 		if (lvl >= max){
 			return (lvl - max);
@@ -325,7 +306,7 @@ public class Armor extends EquipableItem {
 			}
 		}
 		
-		return evasion + augment.evasionFactor(buffedLvl());
+		return evasion + augment.evasionFactor(level());
 	}
 	
 	public float speedFactor( Char owner, float speed ){
@@ -337,16 +318,15 @@ public class Armor extends EquipableItem {
 		
 		if (hasGlyph(Swiftness.class, owner)) {
 			boolean enemyNear = false;
-			PathFinder.buildDistanceMap(owner.pos, Dungeon.level.passable, 2);
 			for (Char ch : Actor.chars()){
-				if ( PathFinder.distance[ch.pos] != Integer.MAX_VALUE && owner.alignment != ch.alignment){
+				if (Dungeon.level.adjacent(ch.pos, owner.pos) && owner.alignment != ch.alignment){
 					enemyNear = true;
 					break;
 				}
 			}
-			if (!enemyNear) speed *= (1.2f + 0.04f * buffedLvl());
+			if (!enemyNear) speed *= (1.2f + 0.04f * level());
 		} else if (hasGlyph(Flow.class, owner) && Dungeon.level.water[owner.pos]){
-			speed *= (2f + 0.25f*buffedLvl());
+			speed *= 2f;
 		}
 		
 		if (hasGlyph(Bulk.class, owner) &&
@@ -362,7 +342,7 @@ public class Armor extends EquipableItem {
 	public float stealthFactor( Char owner, float stealth ){
 		
 		if (hasGlyph(Obfuscation.class, owner)){
-			stealth += 1 + buffedLvl()/3f;
+			stealth += 1 + level()/3f;
 		}
 		
 		return stealth;
@@ -371,16 +351,6 @@ public class Armor extends EquipableItem {
 	@Override
 	public int level() {
 		return super.level() + (curseInfusionBonus ? 1 : 0);
-	}
-	
-	//other things can equip these, for now we assume only the hero can be affected by levelling debuffs
-	@Override
-	public int buffedLvl() {
-		if (isEquipped( Dungeon.hero ) || Dungeon.hero.belongings.contains( this )){
-			return super.buffedLvl();
-		} else {
-			return level();
-		}
 	}
 	
 	@Override
@@ -410,10 +380,9 @@ public class Armor extends EquipableItem {
 			damage = glyph.proc( this, attacker, defender, damage );
 		}
 		
-		if (!levelKnown && defender == Dungeon.hero) {
-			float uses = Math.min( availableUsesToID, Talent.itemIDSpeedFactor(Dungeon.hero, this) );
-			availableUsesToID -= uses;
-			usesLeftToID -= uses;
+		if (!levelKnown && defender == Dungeon.hero && availableUsesToID >= 1) {
+			availableUsesToID--;
+			usesLeftToID--;
 			if (usesLeftToID <= 0) {
 				identify();
 				GLog.p( Messages.get(Armor.class, "identify") );
@@ -426,7 +395,6 @@ public class Armor extends EquipableItem {
 	
 	@Override
 	public void onHeroGainExp(float levelPercent, Hero hero) {
-		levelPercent *= Talent.itemIDSpeedFactor(hero, this);
 		if (!levelKnown && isEquipped(hero) && availableUsesToID <= USES_TO_ID/2f) {
 			//gains enough uses to ID over 0.5 levels
 			availableUsesToID = Math.min(USES_TO_ID/2f, availableUsesToID + levelPercent * USES_TO_ID);
@@ -533,7 +501,7 @@ public class Armor extends EquipableItem {
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		if (seal != null) return 0;
 
 		int price = 20 * tier;
@@ -556,11 +524,6 @@ public class Armor extends EquipableItem {
 		if (glyph == null || !glyph.curse()) curseInfusionBonus = false;
 		this.glyph = glyph;
 		updateQuickslot();
-		//the hero needs runic transference to actually transfer, but we still attach the glyph here
-		// in case they take that talent in the future
-		if (glyph != null && seal != null){
-			seal.setGlyph(glyph);
-		}
 		return this;
 	}
 
@@ -658,45 +621,65 @@ public class Armor extends EquipableItem {
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomCommon( Class<? extends Glyph> ... toIgnore ){
-			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(common));
-			glyphs.removeAll(Arrays.asList(toIgnore));
-			if (glyphs.isEmpty()) {
-				return random();
-			} else {
-				return (Glyph) Reflection.newInstance(Random.element(glyphs));
+			try {
+				ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(common));
+				glyphs.removeAll(Arrays.asList(toIgnore));
+				if (glyphs.isEmpty()) {
+					return random();
+				} else {
+					return (Glyph) Random.element(glyphs).newInstance();
+				}
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+				return null;
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomUncommon( Class<? extends Glyph> ... toIgnore ){
-			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(uncommon));
-			glyphs.removeAll(Arrays.asList(toIgnore));
-			if (glyphs.isEmpty()) {
-				return random();
-			} else {
-				return (Glyph) Reflection.newInstance(Random.element(glyphs));
+			try {
+				ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(uncommon));
+				glyphs.removeAll(Arrays.asList(toIgnore));
+				if (glyphs.isEmpty()) {
+					return random();
+				} else {
+					return (Glyph) Random.element(glyphs).newInstance();
+				}
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+				return null;
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomRare( Class<? extends Glyph> ... toIgnore ){
-			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(rare));
-			glyphs.removeAll(Arrays.asList(toIgnore));
-			if (glyphs.isEmpty()) {
-				return random();
-			} else {
-				return (Glyph) Reflection.newInstance(Random.element(glyphs));
+			try {
+				ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(rare));
+				glyphs.removeAll(Arrays.asList(toIgnore));
+				if (glyphs.isEmpty()) {
+					return random();
+				} else {
+					return (Glyph) Random.element(glyphs).newInstance();
+				}
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+				return null;
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomCurse( Class<? extends Glyph> ... toIgnore ){
-			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(curses));
-			glyphs.removeAll(Arrays.asList(toIgnore));
-			if (glyphs.isEmpty()) {
-				return random();
-			} else {
-				return (Glyph) Reflection.newInstance(Random.element(glyphs));
+			try {
+				ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(curses));
+				glyphs.removeAll(Arrays.asList(toIgnore));
+				if (glyphs.isEmpty()) {
+					return random();
+				} else {
+					return (Glyph) Random.element(glyphs).newInstance();
+				}
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+				return null;
 			}
 		}
 		

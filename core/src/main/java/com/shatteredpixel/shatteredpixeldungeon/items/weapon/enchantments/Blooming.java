@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ public class Blooming extends Weapon.Enchantment {
 		// lvl 0 - 33%
 		// lvl 1 - 50%
 		// lvl 2 - 60%
-		int level = Math.max( 0, weapon.buffedLvl() );
+		int level = Math.max( 0, weapon.level() );
 		
 		if (Random.Int( level + 3 ) >= 2) {
 			
@@ -73,10 +73,9 @@ public class Blooming extends Weapon.Enchantment {
 	}
 	
 	private boolean plantGrass(int cell){
-		int t = Dungeon.level.map[cell];
-		if ((t == Terrain.EMPTY || t == Terrain.EMPTY_DECO || t == Terrain.EMBERS
-				|| t == Terrain.GRASS || t == Terrain.FURROWED_GRASS)
-				&& Dungeon.level.plants.get(cell) == null){
+		int c = Dungeon.level.map[cell];
+		if ( c == Terrain.EMPTY || c == Terrain.EMPTY_DECO
+				|| c == Terrain.EMBERS || c == Terrain.GRASS){
 			Level.set(cell, Terrain.HIGH_GRASS);
 			GameScene.updateMap(cell);
 			CellEmitter.get( cell ).burst( LeafParticle.LEVEL_SPECIFIC, 4 );

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
@@ -41,7 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ItemSlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndInfoItem;
@@ -55,6 +56,7 @@ import com.watabou.noosa.Image;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.NoosaScript;
 import com.watabou.noosa.NoosaScriptNoLighting;
+import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.SkinnedBlock;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
@@ -74,8 +76,8 @@ public class AlchemyScene extends PixelScene {
 	private Emitter lowerBubbles;
 	private SkinnedBlock water;
 	
-	private RenderedTextBlock energyLeft;
-	private RenderedTextBlock energyCost;
+	private RenderedText energyLeft;
+	private RenderedText energyCost;
 	
 	private RedButton btnCombine;
 	
@@ -102,7 +104,6 @@ public class AlchemyScene extends PixelScene {
 				Blending.enable();
 			}
 		};
-		water.autoAdjust = true;
 		add(water);
 		
 		Image im = new Image(TextureCache.createGradient(0x66000000, 0x88000000, 0xAA000000, 0xCC000000, 0xFF000000));
@@ -113,12 +114,10 @@ public class AlchemyScene extends PixelScene {
 		add(im);
 		
 		
-		RenderedTextBlock title = PixelScene.renderTextBlock( Messages.get(this, "title"), 9 );
+		RenderedText title = PixelScene.renderText( Messages.get(this, "title"), 9 );
 		title.hardlight(Window.TITLE_COLOR);
-		title.setPos(
-				(Camera.main.width - title.width()) / 2f,
-				(20 - title.height()) / 2f
-		);
+		title.x = (Camera.main.width - title.width()) / 2f;
+		title.y = (20 - title.baseLine()) / 2f;
 		align(title);
 		add(title);
 		
@@ -127,7 +126,7 @@ public class AlchemyScene extends PixelScene {
 		
 		int pos = (Camera.main.height - 100)/2;
 		
-		RenderedTextBlock desc = PixelScene.renderTextBlock(6);
+		RenderedTextMultiline desc = PixelScene.renderMultiline(6);
 		desc.maxWidth(w);
 		desc.text( Messages.get(AlchemyScene.class, "text") );
 		desc.setPos(left + (w - desc.width())/2, pos);
@@ -153,15 +152,6 @@ public class AlchemyScene extends PixelScene {
 						}
 						AlchemyScene.this.addToFront(WndBag.lastBag( itemSelector, WndBag.Mode.ALCHEMY, Messages.get(AlchemyScene.class, "select")));
 					}
-
-					@Override
-					protected boolean onLongClick() {
-						if (item != null){
-							Game.scene().addToFront(new WndInfoItem(item));
-							return true;
-						}
-						return false;
-					}
 				};
 				inputs[i].setRect(left + 10, pos, BTN_SIZE, BTN_SIZE);
 				add(inputs[i]);
@@ -176,7 +166,7 @@ public class AlchemyScene extends PixelScene {
 			protected void createChildren() {
 				super.createChildren();
 				
-				arrow = Icons.get(Icons.ARROW);
+				arrow = Icons.get(Icons.RESUME);
 				add(arrow);
 			}
 			
@@ -267,7 +257,7 @@ public class AlchemyScene extends PixelScene {
 					{
 						WndJournal.AlchemyTab t = new WndJournal.AlchemyTab();
 						int w, h;
-						if (landscape()) {
+						if (SPDSettings.landscape()) {
 							w = WndJournal.WIDTH_L; h = WndJournal.HEIGHT_L;
 						} else {
 							w = WndJournal.WIDTH_P; h = WndJournal.HEIGHT_P;
@@ -283,14 +273,12 @@ public class AlchemyScene extends PixelScene {
 		btnGuide.setRect(0, 0, 20, 20);
 		add(btnGuide);
 		
-		energyLeft = PixelScene.renderTextBlock(Messages.get(AlchemyScene.class, "energy", availableEnergy()), 9);
-		energyLeft.setPos(
-				(Camera.main.width - energyLeft.width())/2,
-				Camera.main.height - 5 - energyLeft.height()
-		);
+		energyLeft = PixelScene.renderText(Messages.get(AlchemyScene.class, "energy", availableEnergy()), 9);
+		energyLeft.y = Camera.main.height - 5 - energyLeft.baseLine();
+		energyLeft.x = (Camera.main.width - energyLeft.width())/2;
 		add(energyLeft);
 		
-		energyCost = PixelScene.renderTextBlock(6);
+		energyCost = PixelScene.renderText(6);
 		add(energyCost);
 		
 		fadeIn();
@@ -362,10 +350,8 @@ public class AlchemyScene extends PixelScene {
 			output.visible = true;
 			
 			energyCost.text( Messages.get(AlchemyScene.class, "cost", cost) );
-			energyCost.setPos(
-					btnCombine.left() + (btnCombine.width() - energyCost.width())/2,
-					btnCombine.top() - energyCost.height()
-			);
+			energyCost.y = btnCombine.top() - energyCost.baseLine();
+			energyCost.x = btnCombine.left() + (btnCombine.width() - energyCost.width())/2;
 			
 			energyCost.visible = (cost > 0);
 			
@@ -374,7 +360,7 @@ public class AlchemyScene extends PixelScene {
 				energyCost.resetColor();
 			} else {
 				btnCombine.enable(false);
-				energyCost.hardlight(0xFF0000);
+				energyCost.hardlight(1, 0, 0);
 			}
 			
 		} else {
@@ -395,10 +381,8 @@ public class AlchemyScene extends PixelScene {
 		if (recipe != null){
 			provider.spendEnergy(recipe.cost(ingredients));
 			energyLeft.text(Messages.get(AlchemyScene.class, "energy", availableEnergy()));
-			energyLeft.setPos(
-					(Camera.main.width - energyLeft.width())/2,
-					Camera.main.height - 5 - energyLeft.height()
-			);
+			energyLeft.y = Camera.main.height - 5 - energyLeft.baseLine();
+			energyLeft.x = (Camera.main.width - energyLeft.width())/2;
 			
 			result = recipe.brew(ingredients);
 		}
@@ -406,7 +390,7 @@ public class AlchemyScene extends PixelScene {
 		if (result != null){
 			bubbleEmitter.start(Speck.factory( Speck.BUBBLE ), 0.01f, 100 );
 			smokeEmitter.burst(Speck.factory( Speck.WOOL ), 10 );
-			Sample.INSTANCE.play( Assets.Sounds.PUFF );
+			Sample.INSTANCE.play( Assets.SND_PUFF );
 			
 			output.item(result);
 			if (!(result instanceof AlchemistsToolkit)) {
@@ -515,32 +499,24 @@ public class AlchemyScene extends PixelScene {
 			
 			slot = new ItemSlot() {
 				@Override
-				protected void onPointerDown() {
+				protected void onTouchDown() {
 					bg.brightness( 1.2f );
-					Sample.INSTANCE.play( Assets.Sounds.CLICK );
-				}
+					Sample.INSTANCE.play( Assets.SND_CLICK );
+				};
 				@Override
-				protected void onPointerUp() {
+				protected void onTouchUp() {
 					bg.resetColor();
 				}
 				@Override
 				protected void onClick() {
 					ItemButton.this.onClick();
 				}
-
-				@Override
-				protected boolean onLongClick() {
-					return ItemButton.this.onLongClick();
-				}
 			};
 			slot.enable(true);
 			add( slot );
 		}
 		
-		protected void onClick() {}
-		protected boolean onLongClick() {
-			return false;
-		}
+		protected void onClick() {};
 		
 		@Override
 		protected void layout() {
@@ -551,7 +527,7 @@ public class AlchemyScene extends PixelScene {
 			bg.size( width, height );
 			
 			slot.setRect( x + 2, y + 2, width - 4, height - 4 );
-		}
+		};
 		
 		public void item( Item item ) {
 			slot.item( this.item = item );

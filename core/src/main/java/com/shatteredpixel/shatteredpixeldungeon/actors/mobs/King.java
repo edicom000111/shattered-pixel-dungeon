@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,12 +43,13 @@ import com.shatteredpixel.shatteredpixeldungeon.items.keys.SkeletonKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfDisintegration;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Grim;
-import com.shatteredpixel.shatteredpixeldungeon.levels.OldCityBossLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.CityBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.KingSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.UndeadSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
@@ -106,20 +107,20 @@ public class King extends Mob {
 	@Override
 	protected boolean getCloser( int target ) {
 		return canTryToSummon() ?
-			super.getCloser( ((OldCityBossLevel)Dungeon.level).pedestal( nextPedestal ) ) :
+			super.getCloser( ((CityBossLevel)Dungeon.level).pedestal( nextPedestal ) ) :
 			super.getCloser( target );
 	}
 	
 	@Override
 	protected boolean canAttack( Char enemy ) {
 		return canTryToSummon() ?
-				pos == ((OldCityBossLevel)Dungeon.level).pedestal( nextPedestal ) :
+				pos == ((CityBossLevel)Dungeon.level).pedestal( nextPedestal ) :
 				Dungeon.level.adjacent( pos, enemy.pos );
 	}
-
-	protected boolean canTryToSummon() {
+	
+	private boolean canTryToSummon() {
 		if (paralysed <= 0 && Undead.count < maxArmySize()) {
-			Char ch = Actor.findChar( ((OldCityBossLevel)Dungeon.level).pedestal( nextPedestal ) );
+			Char ch = Actor.findChar( ((CityBossLevel)Dungeon.level).pedestal( nextPedestal ) );
 			return ch == this || ch == null;
 		} else {
 			return false;
@@ -128,11 +129,11 @@ public class King extends Mob {
 	
 	@Override
 	protected boolean act() {
-		if (canTryToSummon() && pos == ((OldCityBossLevel)Dungeon.level).pedestal( nextPedestal )) {
+		if (canTryToSummon() && pos == ((CityBossLevel)Dungeon.level).pedestal( nextPedestal )) {
 			summon();
 			return true;
 		} else {
-			if (enemy != null && canTryToSummon() && Actor.findChar( ((OldCityBossLevel)Dungeon.level).pedestal( nextPedestal ) ) == enemy) {
+			if (enemy != null && Actor.findChar( ((CityBossLevel)Dungeon.level).pedestal( nextPedestal ) ) == enemy) {
 				nextPedestal = !nextPedestal;
 			}
 			return super.act();
@@ -162,7 +163,7 @@ public class King extends Mob {
 			beacon.upgrade();
 		}
 		
-		yell( Messages.get(this, "defeated", Dungeon.hero.name()) );
+		yell( Messages.get(this, "defeated", Dungeon.hero.givenName()) );
 	}
 
 	@Override
@@ -175,7 +176,7 @@ public class King extends Mob {
 		}
 	}
 
-	protected int maxArmySize() {
+	private int maxArmySize() {
 		return 1 + MAX_ARMY_SIZE * (HT - HP) / HT;
 	}
 	
@@ -184,7 +185,7 @@ public class King extends Mob {
 		nextPedestal = !nextPedestal;
 		
 		sprite.centerEmitter().start( Speck.factory( Speck.SCREAM ), 0.4f, 2 );
-		Sample.INSTANCE.play( Assets.Sounds.CHALLENGE );
+		Sample.INSTANCE.play( Assets.SND_CHALLENGE );
 		
 		boolean[] passable = Dungeon.level.passable.clone();
 		for (Char c : Actor.chars()) {
@@ -231,6 +232,7 @@ public class King extends Mob {
 			yell(Messages.get(this, "notice"));
 			for (Char ch : Actor.chars()){
 				if (ch instanceof DriedRose.GhostHero){
+					GLog.n("\n");
 					((DriedRose.GhostHero) ch).sayBoss();
 				}
 			}
@@ -314,7 +316,7 @@ public class King extends Mob {
 			super.die( cause );
 			
 			if (Dungeon.level.heroFOV[pos]) {
-				Sample.INSTANCE.play( Assets.Sounds.BONES );
+				Sample.INSTANCE.play( Assets.SND_BONES );
 			}
 		}
 		

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@ package com.shatteredpixel.shatteredpixeldungeon.scenes;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
@@ -32,13 +31,14 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Archs;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndError;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndRanking;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.ui.Button;
 import com.watabou.utils.GameMath;
@@ -59,7 +59,7 @@ public class RankingsScene extends PixelScene {
 		
 		super.create();
 		
-		Music.INSTANCE.play( Assets.Music.THEME, true );
+		Music.INSTANCE.play( Assets.THEME, true );
 
 		uiCamera.visible = false;
 		
@@ -72,12 +72,10 @@ public class RankingsScene extends PixelScene {
 		
 		Rankings.INSTANCE.load();
 
-		RenderedTextBlock title = PixelScene.renderTextBlock( Messages.get(this, "title"), 9);
+		RenderedText title = PixelScene.renderText( Messages.get(this, "title"), 9);
 		title.hardlight(Window.TITLE_COLOR);
-		title.setPos(
-				(w - title.width()) / 2f,
-				(20 - title.height()) / 2f
-		);
+		title.x = (w - title.width()) / 2f;
+		title.y = (20 - title.baseLine()) / 2f;
 		align(title);
 		add(title);
 		
@@ -93,10 +91,12 @@ public class RankingsScene extends PixelScene {
 			
 			for (Rankings.Record rec : Rankings.INSTANCE.records) {
 				Record row = new Record( pos, pos == Rankings.INSTANCE.lastRecord, rec );
-				float offset = 0;
-				if (rowHeight <= 14){
-					offset = (pos % 2 == 1) ? 5 : -5;
-				}
+				float offset =
+						rowHeight <= 14 ?
+								pos %2 == 1?
+										5 :
+										-5
+								: 0;
 				row.setRect( left+offset, top + pos * rowHeight, w - left * 2, rowHeight );
 				add(row);
 				
@@ -104,29 +104,38 @@ public class RankingsScene extends PixelScene {
 			}
 			
 			if (Rankings.INSTANCE.totalNumber >= Rankings.TABLE_SIZE) {
-				
-				RenderedTextBlock label = PixelScene.renderTextBlock( 8 );
+				RenderedText label = PixelScene.renderText( Messages.get(this, "total") + " ", 8 );
 				label.hardlight( 0xCCCCCC );
-				label.setHightlighting(true, Window.SHPX_COLOR);
-				label.text( Messages.get(this, "total") + " _" + Rankings.INSTANCE.wonNumber + "_/" + Rankings.INSTANCE.totalNumber );
 				add( label );
-				
-				label.setPos(
-						(w - label.width()) / 2,
-						h - label.height() - 2*GAP
-				);
+
+				RenderedText won = PixelScene.renderText( Integer.toString( Rankings.INSTANCE.wonNumber ), 8 );
+				won.hardlight( Window.SHPX_COLOR );
+				add( won );
+
+				RenderedText total = PixelScene.renderText( "/" + Rankings.INSTANCE.totalNumber, 8 );
+				total.hardlight( 0xCCCCCC );
+				total.x = (w - total.width()) / 2;
+				total.y = top + pos * rowHeight + GAP;
+				add( total );
+
+				float tw = label.width() + won.width() + total.width();
+				label.x = (w - tw) / 2;
+				won.x = label.x + label.width();
+				total.x = won.x + won.width();
+				label.y = won.y = total.y = h - label.height() - GAP;
+
 				align(label);
+				align(total);
+				align(won);
 
 			}
 			
 		} else {
 
-			RenderedTextBlock noRec = PixelScene.renderTextBlock(Messages.get(this, "no_games"), 8);
+			RenderedText noRec = PixelScene.renderText(Messages.get(this, "no_games"), 8);
 			noRec.hardlight( 0xCCCCCC );
-			noRec.setPos(
-					(w - noRec.width()) / 2,
-					(h - noRec.height()) / 2
-			);
+			noRec.x = (w - noRec.width()) / 2;
+			noRec.y = (h - noRec.height()) / 2;
 			align(noRec);
 			add(noRec);
 			
@@ -158,7 +167,7 @@ public class RankingsScene extends PixelScene {
 		protected ItemSprite shield;
 		private Flare flare;
 		private BitmapText position;
-		private RenderedTextBlock desc;
+		private RenderedTextMultiline desc;
 		private Image steps;
 		private BitmapText depth;
 		private Image classIcon;
@@ -183,6 +192,8 @@ public class RankingsScene extends PixelScene {
 			position.measure();
 			
 			desc.text( Messages.titleCase(rec.desc()) );
+
+			//desc.measure();
 
 			int odd = pos % 2;
 			
@@ -216,10 +227,6 @@ public class RankingsScene extends PixelScene {
 			}
 			
 			classIcon.copy( Icons.get( rec.heroClass ) );
-			if (rec.heroClass == HeroClass.ROGUE){
-				//cloak of shadows needs to be brightened a bit
-				classIcon.brightness(2f);
-			}
 		}
 		
 		@Override
@@ -233,7 +240,7 @@ public class RankingsScene extends PixelScene {
 			position = new BitmapText( PixelScene.pixelFont);
 			add( position );
 			
-			desc = renderTextBlock( 7 );
+			desc = renderMultiline( 7 );
 			add( desc );
 
 			depth = new BitmapText( PixelScene.pixelFont);
@@ -263,17 +270,15 @@ public class RankingsScene extends PixelScene {
 				flare.point( shield.center() );
 			}
 
-			classIcon.x = x + width - 16 + (16 - classIcon.width())/2f;
-			classIcon.y = shield.y + (16 - classIcon.height())/2f;
-			align(classIcon);
+			classIcon.x = x + width - classIcon.width;
+			classIcon.y = shield.y;
 
 			level.x = classIcon.x + (classIcon.width - level.width()) / 2f;
 			level.y = classIcon.y + (classIcon.height - level.height()) / 2f + 1;
 			align(level);
 
-			steps.x = x + width - 32 + (16 - steps.width())/2f;
-			steps.y = shield.y + (16 - steps.height())/2f;
-			align(steps);
+			steps.x = x + width - steps.width - classIcon.width;
+			steps.y = shield.y;
 
 			depth.x = steps.x + (steps.width - depth.width()) / 2f;
 			depth.y = steps.y + (steps.height - depth.height()) / 2f + 1;

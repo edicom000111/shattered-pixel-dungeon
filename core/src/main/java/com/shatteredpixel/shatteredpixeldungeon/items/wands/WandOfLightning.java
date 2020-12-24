@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
-import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -37,7 +36,6 @@ import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.utils.BArray;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Camera;
-import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
@@ -52,7 +50,7 @@ public class WandOfLightning extends DamageWand {
 	
 	private ArrayList<Char> affected = new ArrayList<>();
 
-	private ArrayList<Lightning.Arc> arcs = new ArrayList<>();
+	ArrayList<Lightning.Arc> arcs = new ArrayList<>();
 
 	public int min(int lvl){
 		return 5+lvl;
@@ -70,20 +68,16 @@ public class WandOfLightning extends DamageWand {
 		//if the main target is in water, all affected take full damage
 		if (Dungeon.level.water[bolt.collisionPos]) multipler = 1f;
 
+		int min = 5 + level();
+		int max = 10 + 5*level();
+
 		for (Char ch : affected){
+			processSoulMark(ch, chargesPerCast());
+			ch.damage(Math.round(damageRoll() * multipler), this);
+
 			if (ch == Dungeon.hero) Camera.main.shake( 2, 0.3f );
 			ch.sprite.centerEmitter().burst( SparkParticle.FACTORY, 3 );
 			ch.sprite.flash();
-
-			if (ch != curUser && ch.alignment == curUser.alignment && ch.pos != bolt.collisionPos){
-				continue;
-			}
-			processSoulMark(ch, chargesPerCast());
-			if (ch == curUser) {
-				ch.damage(Math.round(damageRoll() * multipler * 0.5f), this);
-			} else {
-				ch.damage(Math.round(damageRoll() * multipler), this);
-			}
 		}
 
 		if (!curUser.isAlive()) {
@@ -99,27 +93,27 @@ public class WandOfLightning extends DamageWand {
 	}
 
 	private void arc( Char ch ) {
-
-		int dist = (Dungeon.level.water[ch.pos] && !ch.flying) ? 2 : 1;
-
-		ArrayList<Char> hitThisArc = new ArrayList<>();
-		PathFinder.buildDistanceMap( ch.pos, BArray.not( Dungeon.level.solid, null ), dist );
-		for (int i = 0; i < PathFinder.distance.length; i++) {
-			if (PathFinder.distance[i] < Integer.MAX_VALUE){
-				Char n = Actor.findChar( i );
-				if (n == Dungeon.hero && PathFinder.distance[i] > 1)
-					//the hero is only zapped if they are adjacent
-					continue;
-				else if (n != null && !affected.contains( n )) {
-					hitThisArc.add(n);
-				}
-			}
-		}
 		
-		affected.addAll(hitThisArc);
-		for (Char hit : hitThisArc){
-			arcs.add(new Lightning.Arc(ch.sprite.center(), hit.sprite.center()));
-			arc(hit);
+		affected.add( ch );
+
+		int dist;
+		if (Dungeon.level.water[ch.pos] && !ch.flying)
+			dist = 2;
+		else
+			dist = 1;
+
+			PathFinder.buildDistanceMap( ch.pos, BArray.not( Dungeon.level.solid, null ), dist );
+			for (int i = 0; i < PathFinder.distance.length; i++) {
+				if (PathFinder.distance[i] < Integer.MAX_VALUE){
+					Char n = Actor.findChar( i );
+					if (n == Dungeon.hero && PathFinder.distance[i] > 1)
+						//the hero is only zapped if they are adjacent
+						continue;
+					else if (n != null && !affected.contains( n )) {
+						arcs.add(new Lightning.Arc(ch.sprite.center(), n.sprite.center()));
+						arc(n);
+					}
+				}
 		}
 	}
 	
@@ -133,7 +127,6 @@ public class WandOfLightning extends DamageWand {
 
 		Char ch = Actor.findChar( cell );
 		if (ch != null) {
-			affected.add( ch );
 			arcs.add( new Lightning.Arc(curUser.sprite.center(), ch.sprite.center()));
 			arc(ch);
 		} else {
@@ -143,7 +136,6 @@ public class WandOfLightning extends DamageWand {
 
 		//don't want to wait for the effect before processing damage.
 		curUser.sprite.parent.addToFront( new Lightning( arcs, null ) );
-		Sample.INSTANCE.play( Assets.Sounds.LIGHTNING );
 		callback.call();
 	}
 

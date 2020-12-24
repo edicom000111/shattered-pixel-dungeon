@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ import java.util.ArrayList;
 
 public class Camera extends Gizmo {
 
-	private static ArrayList<Camera> all = new ArrayList<>();
+	private static ArrayList<Camera> all = new ArrayList<Camera>();
 	
 	protected static float invW2;
 	protected static float invH2;
@@ -52,6 +52,7 @@ public class Camera extends Gizmo {
 	public float[] matrix;
 	
 	public PointF scroll;
+	public Visual target;
 	
 	private float shakeMagX		= 10f;
 	private float shakeMagY		= 10f;
@@ -93,7 +94,7 @@ public class Camera extends Gizmo {
 		int length = all.size();
 		for (int i=0; i < length; i++) {
 			Camera c = all.get( i );
-			if (c != null && c.exists && c.active) {
+			if (c.exists && c.active) {
 				c.update();
 			}
 		}
@@ -129,7 +130,7 @@ public class Camera extends Gizmo {
 	
 	@Override
 	public void destroy() {
-		panIntensity = 0f;
+		target = null;
 	}
 	
 	public void zoom( float value ) {
@@ -144,7 +145,7 @@ public class Camera extends Gizmo {
 		width = (int)(screenWidth / zoom);
 		height = (int)(screenHeight / zoom);
 		
-		snapTo( fx, fy );
+		focusOn( fx, fy );
 	}
 	
 	public void resize( int width, int height ) {
@@ -154,28 +155,12 @@ public class Camera extends Gizmo {
 		screenHeight = (int)(height * zoom);
 	}
 	
-	Visual followTarget = null;
-	PointF panTarget;
-	//camera moves at a speed such that it will pan to its current target in 1/intensity seconds
-	//keep in mind though that this speed is constantly decreasing, so actual pan time is higher
-	float panIntensity = 0f;
-	
 	@Override
 	public void update() {
 		super.update();
 		
-		if (followTarget != null){
-			panTarget = followTarget.center();
-		}
-		
-		if (panIntensity > 0f){
-			PointF panMove = new PointF();
-			panMove.x = panTarget.x - (scroll.x + width/2f);
-			panMove.y = panTarget.y - (scroll.y + height/2f);
-			
-			panMove.scale(Math.min(1f, Game.elapsed * panIntensity));
-			
-			scroll.offset(panMove);
+		if (target != null) {
+			focusOn( target.x + target.width / 2, target.y + target.height / 2 );
 		}
 		
 		if ((shakeTime -= Game.elapsed) > 0) {
@@ -198,30 +183,16 @@ public class Camera extends Gizmo {
 		return x >= this.x && y >= this.y && x < this.x + screenWidth && y < this.y + screenHeight;
 	}
 	
-	public void shift( PointF point ){
-		scroll.offset(point);
-		panIntensity = 0f;
-	}
-	
-	public void snapTo(float x, float y ) {
+	public void focusOn( float x, float y ) {
 		scroll.set( x - width / 2, y - height / 2 );
-		panIntensity = 0f;
-		followTarget = null;
 	}
 	
-	public void snapTo(PointF point ) {
-		snapTo( point.x, point.y );
+	public void focusOn( PointF point ) {
+		focusOn( point.x, point.y );
 	}
 	
-	public void panTo( PointF dst, float intensity ){
-		panTarget = dst;
-		panIntensity = intensity;
-		followTarget = null;
-	}
-	
-	public void panFollow(Visual target, float intensity ){
-		followTarget = target;
-		panIntensity = intensity;
+	public void focusOn( Visual visual ) {
+		focusOn( visual.center() );
 	}
 	
 	public PointF screenToCamera( int x, int y ) {

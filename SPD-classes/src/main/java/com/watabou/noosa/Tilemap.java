@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -189,8 +189,8 @@ public class Tilemap extends Visual {
 
 	}
 
-	//private int camX, camY, camW, camH;
-	//private int topLeft, bottomRight, length;
+	private int camX, camY, camW, camH;
+	private int topLeft, bottomRight, length;
 
 	@Override
 	public void draw() {
@@ -214,9 +214,8 @@ public class Tilemap extends Visual {
 			topLeftUpdating = -1;
 			updating.setEmpty();
 		}
-		
-		//FIXME temporarily disabled this optimization as it is suspected to cause crashes
-		/*Camera c = Camera.main;
+
+		Camera c = Camera.main;
 		//we treat the position of the tilemap as (0,0) here
 		camX = (int)(c.scroll.x/cellW - x/cellW);
 		camY = (int)(c.scroll.y/cellH - y/cellH);
@@ -243,25 +242,18 @@ public class Tilemap extends Visual {
 			length = bottomRight - topLeft + 1;
 
 		if (length <= 0)
-			return;*/
+			return;
 
-		NoosaScript script = script();
+		NoosaScript script = NoosaScriptNoLighting.get();
 
 		texture.bind();
 
 		script.uModel.valueM4( matrix );
-		script.lighting(
-				rm, gm, bm, am,
-				ra, ga, ba, aa );
 
 		script.camera( camera );
 
-		script.drawQuadSet( buffer, size, 0 );
+		script.drawQuadSet( buffer, length, topLeft );
 
-	}
-	
-	protected NoosaScript script(){
-		return NoosaScriptNoLighting.get();
 	}
 
 	@Override

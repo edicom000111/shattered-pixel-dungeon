@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,10 +25,8 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
@@ -38,7 +36,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCorrosion;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCorruption;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfDisintegration;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLivingEarth;
-import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -46,8 +43,8 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndItem;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
-import com.shatteredpixel.shatteredpixeldungeon.windows.WndUseItem;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.noosa.particles.PixelParticle;
@@ -67,8 +64,6 @@ public class MagesStaff extends MeleeWeapon {
 
 	{
 		image = ItemSpriteSheet.MAGES_STAFF;
-		hitSound = Assets.Sounds.HIT;
-		hitSoundPitch = 1.1f;
 
 		tier = 1;
 
@@ -96,6 +91,7 @@ public class MagesStaff extends MeleeWeapon {
 		this.wand = wand;
 		updateWand(false);
 		wand.curCharges = wand.maxCharges;
+		name = Messages.get(wand, "staff_name");
 	}
 
 	@Override
@@ -126,7 +122,7 @@ public class MagesStaff extends MeleeWeapon {
 		} else if (action.equals(AC_ZAP)){
 
 			if (wand == null) {
-				GameScene.show(new WndUseItem(null, this));
+				GameScene.show(new WndItem(null, this, true));
 				return;
 			}
 
@@ -137,22 +133,10 @@ public class MagesStaff extends MeleeWeapon {
 	}
 
 	@Override
-	public int buffedLvl() {
-		int lvl = super.buffedLvl();
-		if (curUser != null && wand != null) {
-			WandOfMagicMissile.MagicCharge buff = curUser.buff(WandOfMagicMissile.MagicCharge.class);
-			if (buff != null && buff.level() > lvl){
-				return buff.level();
-			}
-		}
-		return lvl;
-	}
-
-	@Override
 	public int proc(Char attacker, Char defender, int damage) {
 		if (wand != null &&
 				attacker instanceof Hero && ((Hero)attacker).subClass == HeroSubClass.BATTLEMAGE) {
-			if (wand.curCharges < wand.maxCharges) wand.partialCharge += 0.5f;
+			if (wand.curCharges < wand.maxCharges) wand.partialCharge += 0.33f;
 			ScrollOfRecharging.charge((Hero)attacker);
 			wand.onHit(this, attacker, defender, damage);
 		}
@@ -189,23 +173,6 @@ public class MagesStaff extends MeleeWeapon {
 
 	public Item imbueWand(Wand wand, Char owner){
 
-		int oldStaffcharges = this.wand.curCharges;
-
-		if (owner == Dungeon.hero && Dungeon.hero.hasTalent(Talent.WAND_PRESERVATION)
-				&& Random.Float() < 0.34f + 0.33f*Dungeon.hero.pointsInTalent(Talent.WAND_PRESERVATION)){
-
-			Talent.WandPreservationCounter counter = Buff.affect(Dungeon.hero, Talent.WandPreservationCounter.class);
-			if (counter.count() < 3) {
-				counter.countUp(1);
-				this.wand.level(0);
-				if (!this.wand.collect()) {
-					Dungeon.level.drop(this.wand, owner.pos);
-				}
-				GLog.newLine();
-				GLog.p(Messages.get(this, "preserved"));
-			}
-		}
-
 		this.wand = null;
 
 		//syncs the level of the two items.
@@ -217,8 +184,10 @@ public class MagesStaff extends MeleeWeapon {
 		level(targetLevel);
 		this.wand = wand;
 		updateWand(false);
-		wand.curCharges = Math.min(wand.maxCharges, wand.curCharges+oldStaffcharges);
+		wand.curCharges = wand.maxCharges;
 		if (owner != null) wand.charge(owner);
+
+		name = Messages.get(wand, "staff_name");
 
 		//This is necessary to reset any particles.
 		//FIXME this is gross, should implement a better way to fully reset quickslot visuals
@@ -234,14 +203,10 @@ public class MagesStaff extends MeleeWeapon {
 
 		return this;
 	}
-
+	
 	public void gainCharge( float amt ){
-		gainCharge(amt, false);
-	}
-
-	public void gainCharge( float amt, boolean overcharge ){
 		if (wand != null){
-			wand.gainCharge(amt, overcharge);
+			wand.gainCharge(amt);
 		}
 	}
 
@@ -285,16 +250,6 @@ public class MagesStaff extends MeleeWeapon {
 	}
 
 	@Override
-	public String name() {
-		if (wand == null) {
-			return super.name();
-		} else {
-			String name = Messages.get(wand, "staff_name");
-			return enchantment != null && (cursedKnown || !enchantment.curse()) ? enchantment.name( name ) : name;
-		}
-	}
-
-	@Override
 	public String info() {
 		String info = super.info();
 
@@ -333,11 +288,12 @@ public class MagesStaff extends MeleeWeapon {
 		wand = (Wand) bundle.get(WAND);
 		if (wand != null) {
 			wand.maxCharges = Math.min(wand.maxCharges + 1, 10);
+			name = Messages.get(wand, "staff_name");
 		}
 	}
 
 	@Override
-	public int value() {
+	public int price() {
 		return 0;
 	}
 	
@@ -390,7 +346,7 @@ public class MagesStaff extends MeleeWeapon {
 		}
 
 		private void applyWand(Wand wand){
-			Sample.INSTANCE.play(Assets.Sounds.BURNING);
+			Sample.INSTANCE.play(Assets.SND_BURNING);
 			curUser.sprite.emitter().burst( ElmoParticle.FACTORY, 12 );
 			evoke(curUser);
 

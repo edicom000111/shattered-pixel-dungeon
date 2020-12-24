@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,13 +22,11 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
-import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
@@ -55,19 +53,19 @@ public class WandOfLivingEarth extends DamageWand {
 	
 	@Override
 	public int min(int lvl) {
-		return 4;
+		return 2 + lvl;
 	}
 	
 	@Override
 	public int max(int lvl) {
-		return 6 + 2*lvl;
+		return 4 + 2*lvl;
 	}
 	
 	@Override
 	protected void onZap(Ballistica bolt) {
 		Char ch = Actor.findChar(bolt.collisionPos);
 		int damage = damageRoll();
-		int armorToAdd = damage;
+		int armorToAdd = Math.round(damage*1.33f);
 
 		EarthGuardian guardian = null;
 		for (Mob m : Dungeon.level.mobs){
@@ -85,29 +83,28 @@ public class WandOfLivingEarth extends DamageWand {
 				buff = Buff.affect(curUser, RockArmor.class);
 			}
 			if (buff != null) {
-				buff.addArmor( buffedLvl(), armorToAdd);
+				buff.addArmor(level(), armorToAdd);
 			}
 		}
 
 		//shooting at the guardian
 		if (guardian != null && guardian == ch){
-			guardian.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + buffedLvl() / 2);
-			guardian.setInfo(curUser, buffedLvl(), armorToAdd);
+			guardian.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + level() / 2);
+			guardian.setInfo(curUser, level(), armorToAdd);
 			processSoulMark(guardian, chargesPerCast());
-			Sample.INSTANCE.play( Assets.Sounds.HIT_MAGIC, 1, 0.9f * Random.Float(0.87f, 1.15f) );
 
 		//shooting the guardian at a location
 		} else if ( guardian == null && buff != null && buff.armor >= buff.armorToGuardian()){
 
 			//create a new guardian
 			guardian = new EarthGuardian();
-			guardian.setInfo(curUser, buffedLvl(), buff.armor);
+			guardian.setInfo(curUser, level(), buff.armor);
 
 			//if the collision pos is occupied (likely will be), then spawn the guardian in the
 			//adjacent cell which is closes to the user of the wand.
 			if (ch != null){
 
-				ch.sprite.centerEmitter().burst(MagicMissile.EarthParticle.BURST, 5 + buffedLvl()/2);
+				ch.sprite.centerEmitter().burst(MagicMissile.EarthParticle.BURST, 5 + level()/2);
 
 				processSoulMark(ch, chargesPerCast());
 				ch.damage(damage, this);
@@ -124,12 +121,12 @@ public class WandOfLivingEarth extends DamageWand {
 				}
 
 				if (closest == -1){
-					curUser.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + buffedLvl()/2);
+					curUser.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + level()/2);
 					return; //do not spawn guardian or detach buff
 				} else {
 					guardian.pos = closest;
 					GameScene.add(guardian, 1);
-					Dungeon.level.occupyCell(guardian);
+					Dungeon.level.press(guardian.pos, guardian);
 				}
 
 				if (ch.alignment == Char.Alignment.ENEMY || ch.buff(Amok.class) != null) {
@@ -139,36 +136,34 @@ public class WandOfLivingEarth extends DamageWand {
 			} else {
 				guardian.pos = bolt.collisionPos;
 				GameScene.add(guardian, 1);
-				Dungeon.level.occupyCell(guardian);
+				Dungeon.level.press(guardian.pos, guardian);
 			}
 
-			guardian.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + buffedLvl()/2);
+			guardian.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + level()/2);
 			buff.detach();
-			Sample.INSTANCE.play( Assets.Sounds.HIT_MAGIC, 1, 0.9f * Random.Float(0.87f, 1.15f) );
 
 		//shooting at a location/enemy with no guardian being shot
 		} else {
 
 			if (ch != null) {
 
-				ch.sprite.centerEmitter().burst(MagicMissile.EarthParticle.BURST, 5 + buffedLvl() / 2);
+				ch.sprite.centerEmitter().burst(MagicMissile.EarthParticle.BURST, 5 + level() / 2);
 
 				processSoulMark(ch, chargesPerCast());
 				ch.damage(damage, this);
-				Sample.INSTANCE.play( Assets.Sounds.HIT_MAGIC, 1, 0.8f * Random.Float(0.87f, 1.15f) );
 				
 				if (guardian == null) {
-					curUser.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + buffedLvl() / 2);
+					curUser.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + level() / 2);
 				} else {
-					guardian.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + buffedLvl() / 2);
-					guardian.setInfo(curUser, buffedLvl(), armorToAdd);
+					guardian.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + level() / 2);
+					guardian.setInfo(curUser, level(), armorToAdd);
 					if (ch.alignment == Char.Alignment.ENEMY || ch.buff(Amok.class) != null) {
 						guardian.aggro(ch);
 					}
 				}
 
 			} else {
-				Dungeon.level.pressCell(bolt.collisionPos);
+				Dungeon.level.press(bolt.collisionPos, null, true);
 			}
 		}
 
@@ -181,7 +176,7 @@ public class WandOfLivingEarth extends DamageWand {
 				curUser.sprite,
 				bolt.collisionPos,
 				callback);
-		Sample.INSTANCE.play(Assets.Sounds.ZAP);
+		Sample.INSTANCE.play(Assets.SND_ZAP);
 	}
 	
 	@Override
@@ -193,15 +188,13 @@ public class WandOfLivingEarth extends DamageWand {
 				break;
 			}
 		}
-		
-		int armor = Math.round(damage*0.33f);
 
 		if (guardian != null){
-			guardian.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + buffedLvl() / 2);
-			guardian.setInfo(Dungeon.hero, buffedLvl(), armor);
+			guardian.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + level() / 2);
+			guardian.setInfo(Dungeon.hero, level(), damage);
 		} else {
-			attacker.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + buffedLvl() / 2);
-			Buff.affect(attacker, RockArmor.class).addArmor( buffedLvl(), armor);
+			attacker.sprite.centerEmitter().burst(MagicMissile.EarthParticle.ATTRACT, 8 + level() / 2);
+			Buff.affect(attacker, RockArmor.class).addArmor(level(), damage);
 		}
 	}
 	
@@ -226,14 +219,13 @@ public class WandOfLivingEarth extends DamageWand {
 		private int wandLevel;
 		private int armor;
 
-		private void addArmor( int wandLevel, int toAdd ){
+		private void addArmor( int wandLevel, int armor ){
 			this.wandLevel = Math.max(this.wandLevel, wandLevel);
-			armor += toAdd;
-			armor = Math.min(armor, 2*armorToGuardian());
+			this.armor += armor;
 		}
 
 		private int armorToGuardian(){
-			return 8 + wandLevel*4;
+			return 10 + wandLevel*5;
 		}
 
 		public int absorb( int damage ) {
@@ -243,6 +235,7 @@ public class WandOfLivingEarth extends DamageWand {
 				return damage - armor;
 			} else {
 				armor -= block;
+				BuffIndicator.refreshHero();
 				return damage - block;
 			}
 		}
@@ -250,11 +243,6 @@ public class WandOfLivingEarth extends DamageWand {
 		@Override
 		public int icon() {
 			return BuffIndicator.ARMOR;
-		}
-
-		@Override
-		public float iconFadePercent() {
-			return Math.max(0, (armorToGuardian() - armor) / (float)armorToGuardian());
 		}
 
 		@Override
@@ -306,7 +294,7 @@ public class WandOfLivingEarth extends DamageWand {
 		private void setInfo(Hero hero, int wandLevel, int healthToAdd){
 			if (wandLevel > this.wandLevel) {
 				this.wandLevel = wandLevel;
-				HT = 16 + 8 * wandLevel;
+				HT = 20 + 10 * wandLevel;
 			}
 			HP = Math.min(HT, HP + healthToAdd);
 			//half of hero's evasion
@@ -327,30 +315,17 @@ public class WandOfLivingEarth extends DamageWand {
 
 		@Override
 		public int damageRoll() {
-			return Random.NormalIntRange(2, 4 + Dungeon.depth/2);
+			return Random.NormalIntRange(2 + Dungeon.depth/6, 6 + Dungeon.depth/2);
 		}
 
 		@Override
 		public int drRoll() {
-			if (Dungeon.isChallenged(Challenges.NO_ARMOR)){
-				return Random.NormalIntRange(wandLevel, 2 + wandLevel);
-			} else {
-				return Random.NormalIntRange(wandLevel, 3 + 3 * wandLevel);
-			}
+			return Random.NormalIntRange(wandLevel, 3 + 3*wandLevel);
 		}
 
 		@Override
 		public String description() {
-			if (Dungeon.isChallenged(Challenges.NO_ARMOR)){
-				return Messages.get(this, "desc", wandLevel, 2 + wandLevel);
-			} else {
-				return Messages.get(this, "desc", wandLevel, 3 + 3*wandLevel);
-			}
-			
-		}
-		
-		{
-			immunities.add( Corruption.class );
+			return Messages.get(this, "desc", wandLevel, 3 + 3*wandLevel);
 		}
 
 		private static final String DEFENSE = "defense";

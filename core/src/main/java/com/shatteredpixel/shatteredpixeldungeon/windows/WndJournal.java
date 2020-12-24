@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
@@ -38,13 +40,12 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickRecipe;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.ui.Component;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -70,8 +71,8 @@ public class WndJournal extends WndTabbed {
 	
 	public WndJournal(){
 		
-		int width = PixelScene.landscape() ? WIDTH_L : WIDTH_P;
-		int height = PixelScene.landscape() ? HEIGHT_L : HEIGHT_P;
+		int width = SPDSettings.landscape() ? WIDTH_L : WIDTH_P;
+		int height = SPDSettings.landscape() ? HEIGHT_L : HEIGHT_P;
 		
 		resize(width, height);
 		
@@ -136,7 +137,7 @@ public class WndJournal extends WndTabbed {
 	
 	private static class ListItem extends Component {
 		
-		protected RenderedTextBlock label;
+		protected RenderedTextMultiline label;
 		protected BitmapText depth;
 		protected ColorBlock line;
 		protected Image icon;
@@ -165,7 +166,7 @@ public class WndJournal extends WndTabbed {
 		
 		@Override
 		protected void createChildren() {
-			label = PixelScene.renderTextBlock( 7 );
+			label = PixelScene.renderMultiline( 7 );
 			add( label );
 			
 			icon = new Image();
@@ -183,7 +184,6 @@ public class WndJournal extends WndTabbed {
 		protected void layout() {
 			
 			icon.y = y + 1 + (height() - 1 - icon.height()) / 2f;
-			icon.x = x + (16 - icon.width())/2f;
 			PixelScene.align(icon);
 			
 			depth.x = icon.x + (icon.width - depth.width()) / 2f;
@@ -194,8 +194,8 @@ public class WndJournal extends WndTabbed {
 			line.x = 0;
 			line.y = y;
 			
-			label.maxWidth((int)(width - 16 - 1));
-			label.setPos(17, y + 1 + (height() - label.height()) / 2f);
+			label.maxWidth((int)(width - icon.width() - 8 - 1));
+			label.setPos(icon.x + icon.width() + 1, y + 1 + (height() - label.height()) / 2f);
 			PixelScene.align(label);
 		}
 	}
@@ -236,7 +236,7 @@ public class WndJournal extends WndTabbed {
 			line.y = pos;
 			content.add(line);
 			
-			RenderedTextBlock title = PixelScene.renderTextBlock(Document.ADVENTURERS_GUIDE.title(), 9);
+			RenderedTextMultiline title = PixelScene.renderMultiline(Document.ADVENTURERS_GUIDE.title(), 9);
 			title.hardlight(TITLE_COLOR);
 			title.maxWidth( (int)width() - 2 );
 			title.setPos( (width() - title.width())/2f, pos + 1 + ((ITEM_HEIGHT) - title.height())/2f);
@@ -265,7 +265,8 @@ public class WndJournal extends WndTabbed {
 			private String page;
 			
 			public GuideItem( String page ){
-				super( iconForPage(page), Messages.titleCase(Document.ADVENTURERS_GUIDE.pageTitle(page)));
+				super( new ItemSprite( ItemSpriteSheet.GUIDE_PAGE, null),
+						Messages.titleCase(Document.ADVENTURERS_GUIDE.pageTitle(page)), -1);
 				
 				this.page = page;
 				found = Document.ADVENTURERS_GUIDE.hasPage(page);
@@ -280,41 +281,10 @@ public class WndJournal extends WndTabbed {
 			
 			public boolean onClick( float x, float y ) {
 				if (inside( x, y ) && found) {
-					GameScene.show( new WndStory( iconForPage(page),
-							Document.ADVENTURERS_GUIDE.pageTitle(page),
-							Document.ADVENTURERS_GUIDE.pageBody(page) ));
+					GameScene.show( new WndStory( Document.ADVENTURERS_GUIDE.pageBody(page) ));
 					return true;
 				} else {
 					return false;
-				}
-			}
-
-			//TODO might just want this to be part of the Document class
-			private static Image iconForPage( String page ){
-				if (!Document.ADVENTURERS_GUIDE.hasPage(page)){
-					return new ItemSprite( ItemSpriteSheet.GUIDE_PAGE );
-				}
-				switch (page){
-					case Document.GUIDE_INTRO_PAGE: default:
-						return new ItemSprite(ItemSpriteSheet.MASTERY);
-					case "Identifying":
-						return new ItemSprite( ItemSpriteSheet.SCROLL_ISAZ );
-					case Document.GUIDE_SEARCH_PAGE:
-						return new ItemSprite( ItemSpriteSheet.LOCKED_CHEST );
-					case "Strength":
-						return new ItemSprite( ItemSpriteSheet.ARMOR_SCALE );
-					case "Food":
-						return new ItemSprite( ItemSpriteSheet.PASTY );
-					case "Levelling":
-						return new ItemSprite( ItemSpriteSheet.POTION_MAGENTA );
-					case "Surprise_Attacks":
-						return new ItemSprite( ItemSpriteSheet.ASSASSINS_BLADE );
-					case "Dieing":
-						return new ItemSprite( ItemSpriteSheet.ANKH );
-					case "Looting":
-						return new ItemSprite( ItemSpriteSheet.CRYSTAL_KEY );
-					case "Magic":
-						return new ItemSprite( ItemSpriteSheet.WAND_LIGHTNING );
 				}
 			}
 			
@@ -332,7 +302,7 @@ public class WndJournal extends WndTabbed {
 		private static int currentPageIdx   = -1;
 		
 		private IconTitle title;
-		private RenderedTextBlock body;
+		private RenderedTextMultiline body;
 		
 		private ScrollPane list;
 		private ArrayList<QuickRecipe> recipes = new ArrayList<>();
@@ -362,7 +332,7 @@ public class WndJournal extends WndTabbed {
 			title.icon( new ItemSprite(ItemSpriteSheet.ALCH_PAGE));
 			title.visible = false;
 
-			body = PixelScene.renderTextBlock(6);
+			body = PixelScene.renderMultiline(6);
 			
 			list = new ScrollPane(new Component());
 			add(list);
@@ -372,7 +342,7 @@ public class WndJournal extends WndTabbed {
 		protected void layout() {
 			super.layout();
 			
-			if (PixelScene.landscape()){
+			if (SPDSettings.landscape()){
 				float buttonWidth = width()/pageButtons.length;
 				for (int i = 0; i < NUM_BUTTONS; i++) {
 					pageButtons[i].setRect(i*buttonWidth, 0, buttonWidth, ITEM_HEIGHT);
@@ -440,7 +410,7 @@ public class WndJournal extends WndTabbed {
 			ArrayList<QuickRecipe> toAdd = QuickRecipe.getRecipes(currentPageIdx);
 			
 			float left;
-			float top = body.bottom()+1;
+			float top = body.bottom();
 			int w;
 			ArrayList<QuickRecipe> toAddThisRow = new ArrayList<>();
 			while (!toAdd.isEmpty()){
@@ -521,7 +491,7 @@ public class WndJournal extends WndTabbed {
 				line.y = pos;
 				content.add(line);
 				
-				RenderedTextBlock title = PixelScene.renderTextBlock(Messages.get(this, "keys"), 9);
+				RenderedTextMultiline title = PixelScene.renderMultiline(Messages.get(this, "keys"), 9);
 				title.hardlight(TITLE_COLOR);
 				title.maxWidth( (int)width() - 2 );
 				title.setPos( (width() - title.width())/2f, pos + 1 + ((ITEM_HEIGHT) - title.height())/2f);
@@ -546,7 +516,7 @@ public class WndJournal extends WndTabbed {
 				line.y = pos;
 				content.add(line);
 				
-				RenderedTextBlock title = PixelScene.renderTextBlock(Messages.get(this, "landmarks"), 9);
+				RenderedTextMultiline title = PixelScene.renderMultiline(Messages.get(this, "landmarks"), 9);
 				title.hardlight(TITLE_COLOR);
 				title.maxWidth( (int)width() - 2 );
 				title.setPos( (width() - title.width())/2f, pos + 1 + ((ITEM_HEIGHT) - title.height())/2f);
@@ -699,12 +669,16 @@ public class WndJournal extends WndTabbed {
 			
 			float pos = 0;
 			for (Class<? extends Item> itemClass : itemClasses) {
-				CatalogItem item = new CatalogItem(Reflection.newInstance(itemClass), known.get(itemClass), Catalog.isSeen(itemClass));
-				item.setRect( 0, pos, width, ITEM_HEIGHT );
-				content.add( item );
-				items.add( item );
-				
-				pos += item.height();
+				try{
+					CatalogItem item = new CatalogItem(itemClass.newInstance(), known.get(itemClass), Catalog.isSeen(itemClass));
+					item.setRect( 0, pos, width, ITEM_HEIGHT );
+					content.add( item );
+					items.add( item );
+					
+					pos += item.height();
+				} catch (Exception e) {
+					ShatteredPixelDungeon.reportException(e);
+				}
 			}
 			
 			content.setSize( width, pos );

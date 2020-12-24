@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,9 +26,11 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.connection.ConnectionRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.CaveRoom;
+import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.EmptyRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.StandardRoom;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTileSheet;
 import com.watabou.utils.Random;
+import com.watabou.utils.Rect;
 
 import java.util.ArrayList;
 
@@ -40,17 +42,9 @@ public class CavesPainter extends RegularPainter {
 		int w = level.width();
 		int l = level.length();
 		int[] map = level.map;
-
-		for (Room r : rooms) {
-			for (Room n : r.neigbours) {
-				if (!r.connected.containsKey( n )) {
-					mergeRooms(level, r, n, null, Terrain.CHASM);
-				}
-			}
-		}
-
+		
 		for (Room room : rooms) {
-			if (!(room instanceof StandardRoom)) {
+			if (!(room instanceof EmptyRoom || room instanceof CaveRoom)) {
 				continue;
 			}
 			
@@ -93,10 +87,7 @@ public class CavesPainter extends RegularPainter {
 			}
 			
 			for (Room n : room.connected.keySet()) {
-				if ((n instanceof StandardRoom || n instanceof ConnectionRoom) && Random.Int( 5 ) == 0) {
-					Painter.set( level, room.connected.get( n ), Terrain.EMPTY_DECO );
-				}
-				if (n instanceof CaveRoom && room instanceof CaveRoom){
+				if ((n instanceof StandardRoom || n instanceof ConnectionRoom) && Random.Int( 3 ) == 0) {
 					Painter.set( level, room.connected.get( n ), Terrain.EMPTY_DECO );
 				}
 			}
@@ -130,6 +121,33 @@ public class CavesPainter extends RegularPainter {
 				map[i] = Terrain.WALL_DECO;
 			}
 		}
-
+		
+		for (Room r : rooms) {
+			if (r instanceof EmptyRoom) {
+				for (Room n : r.neigbours) {
+					if (n instanceof EmptyRoom && !r.connected.containsKey( n )) {
+						Rect i = r.intersect( n );
+						if (i.left == i.right && i.bottom - i.top >= 5) {
+							
+							i.top += 2;
+							i.bottom -= 1;
+							
+							i.right++;
+							
+							Painter.fill( level, i.left, i.top, 1, i.height(), Terrain.CHASM );
+							
+						} else if (i.top == i.bottom && i.right - i.left >= 5) {
+							
+							i.left += 2;
+							i.right -= 1;
+							
+							i.bottom++;
+							
+							Painter.fill( level, i.left, i.top, i.width(), 1, Terrain.CHASM );
+						}
+					}
+				}
+			}
+		}
 	}
 }

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.effects;
 
-import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.glwrap.Blending;
@@ -111,11 +110,7 @@ public class Flare extends Visual {
 	}
 	
 	public Flare show( Visual visual, float duration ) {
-		if (visual instanceof CharSprite){
-			point(((CharSprite) visual).destinationCenter());
-		} else {
-			point(visual.center());
-		}
+		point( visual.center() );
 		visual.parent.addToBack( this );
 		
 		lifespan = this.duration = duration;

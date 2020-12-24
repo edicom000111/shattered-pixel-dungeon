@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,23 +23,31 @@ package com.shatteredpixel.shatteredpixeldungeon.items;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Frost;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Wraith;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Shopkeeper;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlameParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.ChargrilledMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.FrozenCarpaccio;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.journal.DocumentPage;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfWealth;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
@@ -47,6 +55,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -64,7 +73,7 @@ public class Heap implements Bundlable {
 		TOMB,
 		SKELETON,
 		REMAINS,
-		MIMIC //remains for pre-0.8.0 compatibility. There are converted to mimics on level load
+		MIMIC
 	}
 	public Type type = Type.HEAP;
 	
@@ -74,12 +83,43 @@ public class Heap implements Bundlable {
 	public boolean seen = false;
 	public boolean haunted = false;
 	
-	public LinkedList<Item> items = new LinkedList<>();
+	public LinkedList<Item> items = new LinkedList<Item>();
+	
+	public int image() {
+		switch (type) {
+		case HEAP:
+		case FOR_SALE:
+			return size() > 0 ? items.peek().image() : 0;
+		case CHEST:
+		case MIMIC:
+			return ItemSpriteSheet.CHEST;
+		case LOCKED_CHEST:
+			return ItemSpriteSheet.LOCKED_CHEST;
+		case CRYSTAL_CHEST:
+			return ItemSpriteSheet.CRYSTAL_CHEST;
+		case TOMB:
+			return ItemSpriteSheet.TOMB;
+		case SKELETON:
+			return ItemSpriteSheet.BONES;
+		case REMAINS:
+			return ItemSpriteSheet.REMAINS;
+		default:
+			return 0;
+		}
+	}
+	
+	public ItemSprite.Glowing glowing() {
+		return (type == Type.HEAP || type == Type.FOR_SALE) && items.size() > 0 ? items.peek().glowing() : null;
+	}
 	
 	public void open( Hero hero ) {
 		switch (type) {
 		case MIMIC:
-			type = Type.CHEST;
+			if (Mimic.spawnAt(pos, items) != null) {
+				destroy();
+			} else {
+				type = Type.CHEST;
+			}
 			break;
 		case TOMB:
 			Wraith.spawnAround( hero.pos );
@@ -96,7 +136,7 @@ public class Heap implements Bundlable {
 				hero.sprite.emitter().burst( ShadowParticle.CURSE, 6 );
 				hero.damage( hero.HP / 2, this );
 			}
-			Sample.INSTANCE.play( Assets.Sounds.CURSED );
+			Sample.INSTANCE.play( Assets.SND_CURSED );
 		}
 
 		if (type != Type.MIMIC) {
@@ -104,16 +144,21 @@ public class Heap implements Bundlable {
 			ArrayList<Item> bonus = RingOfWealth.tryForBonusDrop(hero, 1);
 			if (bonus != null && !bonus.isEmpty()) {
 				items.addAll(0, bonus);
-				RingOfWealth.showFlareForBonusDrop(sprite);
+				if (RingOfWealth.latestDropWasRare){
+					new Flare(8, 48).color(0xAA00FF, true).show(sprite, 2f);
+					RingOfWealth.latestDropWasRare = false;
+				} else {
+					new Flare(8, 24).color(0xFFFFFF, true).show(sprite, 2f);
+				}
 			}
 			sprite.link();
 			sprite.drop();
 		}
 	}
 	
-	public Heap setHauntedIfCursed(){
+	public Heap setHauntedIfCursed( float chance ){
 		for (Item item : items) {
-			if (item.cursed) {
+			if (item.cursed && Random.Float() < chance) {
 				haunted = true;
 				item.cursedKnown = true;
 				break;
@@ -136,7 +181,8 @@ public class Heap implements Bundlable {
 		if (items.isEmpty()) {
 			destroy();
 		} else if (sprite != null) {
-			sprite.view(this).place( pos );
+			sprite.view( image(), glowing() );
+			sprite.place( pos );
 		}
 		
 		return item;
@@ -160,14 +206,18 @@ public class Heap implements Bundlable {
 			
 		}
 		
-		if (item.dropsDownHeap && type != Type.FOR_SALE) {
+		if ((item instanceof Dewdrop || item instanceof DriedRose.Petal) && type != Type.FOR_SALE) {
 			items.add( item );
 		} else {
 			items.addFirst( item );
 		}
 		
 		if (sprite != null) {
-			sprite.view(this).place( pos );
+			if (type == Type.HEAP || type == Type.FOR_SALE)
+				sprite.view( items.peek() );
+			else
+				sprite.view( image(), glowing() );
+			sprite.place( pos );
 		}
 	}
 	
@@ -179,16 +229,16 @@ public class Heap implements Bundlable {
 		}
 	}
 	
-	public void remove( Item a ){
-		items.remove(a);
-		if (items.isEmpty()){
-			destroy();
-		} else if (sprite != null) {
-			sprite.view(this).place( pos );
-		}
-	}
-	
 	public void burn() {
+
+		if (type == Type.MIMIC) {
+			Mimic m = Mimic.spawnAt( pos, items );
+			if (m != null) {
+				Buff.affect( m, Burning.class ).reignite( m );
+				m.sprite.emitter().burst( FlameParticle.FACTORY, 5 );
+				destroy();
+			}
+		}
 
 		if (type != Type.HEAP) {
 			return;
@@ -198,7 +248,8 @@ public class Heap implements Bundlable {
 		boolean evaporated = false;
 		
 		for (Item item : items.toArray( new Item[0] )) {
-			if (item instanceof Scroll && !item.unique) {
+			if (item instanceof Scroll
+					&& !(item instanceof ScrollOfUpgrade)) {
 				items.remove( item );
 				burnt = true;
 			} else if (item instanceof Dewdrop) {
@@ -232,7 +283,7 @@ public class Heap implements Bundlable {
 			if (isEmpty()) {
 				destroy();
 			} else if (sprite != null) {
-				sprite.view(this).place( pos );
+				sprite.view( items.peek() );
 			}
 			
 		}
@@ -257,18 +308,9 @@ public class Heap implements Bundlable {
 
 			for (Item item : items.toArray( new Item[0] )) {
 
-				//unique items aren't affect by explosions
-				if (item.unique || (item instanceof Armor && ((Armor) item).checkSeal() != null)){
-					continue;
-				}
-
 				if (item instanceof Potion) {
-					items.remove(item);
+					items.remove( item );
 					((Potion) item).shatter(pos);
-
-				} else if (item instanceof Honeypot.ShatteredPot) {
-					items.remove(item);
-					((Honeypot.ShatteredPot) item).destroyPot(pos);
 
 				} else if (item instanceof Bomb) {
 					items.remove( item );
@@ -278,22 +320,30 @@ public class Heap implements Bundlable {
 						return;
 					}
 
-				//upgraded items can endure the blast
-				} else if (item.level() <= 0) {
+				//unique and upgraded items can endure the blast
+				} else if (!(item.level() > 0 || item.unique
+						|| (item instanceof Armor && ((Armor) item).checkSeal() != null)))
 					items.remove( item );
-				}
 
 			}
 
 			if (isEmpty()){
 				destroy();
 			} else if (sprite != null) {
-				sprite.view(this).place( pos );
+				sprite.view( items.peek() );
 			}
 		}
 	}
 	
 	public void freeze() {
+
+		if (type == Type.MIMIC) {
+			Mimic m = Mimic.spawnAt( pos, items );
+			if (m != null) {
+				Buff.prolong( m, Frost.class, Frost.duration( m ) * Random.Float( 1.0f, 1.5f ) );
+				destroy();
+			}
+		}
 
 		if (type != Type.HEAP) {
 			return;
@@ -304,7 +354,7 @@ public class Heap implements Bundlable {
 			if (item instanceof MysteryMeat) {
 				replace( item, FrozenCarpaccio.cook( (MysteryMeat)item ) );
 				frozen = true;
-			} else if (item instanceof Potion && !item.unique) {
+			} else if (item instanceof Potion && !(item instanceof PotionOfStrength)) {
 				items.remove(item);
 				((Potion) item).shatter(pos);
 				frozen = true;
@@ -318,14 +368,14 @@ public class Heap implements Bundlable {
 			if (isEmpty()) {
 				destroy();
 			} else if (sprite != null) {
-				sprite.view(this).place( pos );
+				sprite.view( items.peek() );
 			}
 		}
 	}
 	
 	public static void burnFX( int pos ) {
 		CellEmitter.get( pos ).burst( ElmoParticle.FACTORY, 6 );
-		Sample.INSTANCE.play( Assets.Sounds.BURNING );
+		Sample.INSTANCE.play( Assets.SND_BURNING );
 	}
 	
 	public static void evaporateFX( int pos ) {
@@ -347,9 +397,6 @@ public class Heap implements Bundlable {
 	@Override
 	public String toString(){
 		switch(type){
-			case FOR_SALE:
-				Item i = peek();
-				return Messages.get(this, "for_sale", Shopkeeper.sellPrice(i), i.toString());
 			case CHEST:
 			case MIMIC:
 				return Messages.get(this, "chest");
@@ -406,7 +453,7 @@ public class Heap implements Bundlable {
 		seen = bundle.getBoolean( SEEN );
 		type = Type.valueOf( bundle.getString( TYPE ) );
 		
-		items = new LinkedList<>((Collection<Item>) ((Collection<?>) bundle.getCollection(ITEMS)));
+		items = new LinkedList<Item>( (Collection<Item>) ((Collection<?>) bundle.getCollection( ITEMS )) );
 		items.removeAll(Collections.singleton(null));
 		
 		//remove any document pages that either don't exist anymore or that the player already has

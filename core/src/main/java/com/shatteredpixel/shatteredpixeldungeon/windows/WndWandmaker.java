@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.plants.Rotberry;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 
@@ -61,7 +61,7 @@ public class WndWandmaker extends Window {
 			msg = Messages.get(this, "berry");
 		}
 
-		RenderedTextBlock message = PixelScene.renderTextBlock( msg, 6 );
+		RenderedTextMultiline message = PixelScene.renderMultiline( msg, 6 );
 		message.maxWidth(WIDTH);
 		message.setPos(0, titlebar.bottom() + GAP);
 		add( message );
@@ -88,13 +88,9 @@ public class WndWandmaker extends Window {
 	}
 	
 	private void selectReward( Wandmaker wandmaker, Item item, Wand reward ) {
-
-		if (reward == null){
-			return;
-		}
-
+		
 		hide();
-
+		
 		item.detach( Dungeon.hero.belongings.backpack );
 
 		reward.identify();
@@ -104,7 +100,7 @@ public class WndWandmaker extends Window {
 			Dungeon.level.drop( reward, wandmaker.pos ).sprite.drop();
 		}
 		
-		wandmaker.yell( Messages.get(this, "farewell", Dungeon.hero.name()) );
+		wandmaker.yell( Messages.get(this, "farewell", Dungeon.hero.givenName()) );
 		wandmaker.destroy();
 		
 		wandmaker.sprite.die();

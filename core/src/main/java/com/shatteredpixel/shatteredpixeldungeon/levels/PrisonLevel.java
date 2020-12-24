@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.levels;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Wandmaker;
+import com.watabou.noosa.Halo;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlameParticle;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.PrisonPainter;
@@ -43,7 +44,6 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ToxicTrap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.watabou.noosa.Group;
-import com.watabou.noosa.Halo;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
@@ -63,16 +63,14 @@ public class PrisonLevel extends RegularLevel {
 	}
 	
 	@Override
-	protected int standardRooms(boolean forceMax) {
-		if (forceMax) return 8;
-		//6 to 8, average 6.75
+	protected int standardRooms() {
+		//6 to 8, average 6.66
 		return 6+Random.chances(new float[]{4, 2, 2});
 	}
 	
 	@Override
-	protected int specialRooms(boolean forceMax) {
-		if (forceMax) return 3;
-		//1 to 3, average 2.0
+	protected int specialRooms() {
+		//1 to 3, average 1.83
 		return 1+Random.chances(new float[]{3, 4, 3});
 	}
 	
@@ -86,28 +84,26 @@ public class PrisonLevel extends RegularLevel {
 	
 	@Override
 	public String tilesTex() {
-		return Assets.Environment.TILES_PRISON;
+		return Assets.TILES_PRISON;
 	}
 	
 	@Override
 	public String waterTex() {
-		return Assets.Environment.WATER_PRISON;
+		return Assets.WATER_PRISON;
 	}
 	
 	@Override
 	protected Class<?>[] trapClasses() {
-		return new Class[]{
-				ChillingTrap.class, ShockingTrap.class, ToxicTrap.class, BurningTrap.class, PoisonDartTrap.class,
+		return new Class[]{ ChillingTrap.class, ShockingTrap.class, ToxicTrap.class, BurningTrap.class, PoisonDartTrap.class,
 				AlarmTrap.class, OozeTrap.class, GrippingTrap.class,
 				ConfusionTrap.class, FlockTrap.class, SummoningTrap.class, TeleportationTrap.class, };
 	}
 
 	@Override
 	protected float[] trapChances() {
-		return new float[]{
-				4, 4, 4, 4, 4,
-				2, 2, 2,
-				1, 1, 1, 1 };
+		return new float[]{ 8, 8, 8, 8, 8,
+				4, 4, 4,
+				2, 2, 2, 2 };
 	}
 
 	@Override

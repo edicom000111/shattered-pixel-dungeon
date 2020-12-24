@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ package com.shatteredpixel.shatteredpixeldungeon.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -33,7 +32,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTerrainTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndJournal;
-import com.watabou.input.GameAction;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Gizmo;
@@ -74,43 +72,20 @@ public class Toolbar extends Component {
 	@Override
 	protected void createChildren() {
 		
-		btnQuick = new QuickslotTool[4];
-		
-		add( btnQuick[3] = new QuickslotTool(64, 0, 22, 24, 3) );
-		add( btnQuick[2] = new QuickslotTool(64, 0, 22, 24, 2) );
-		add( btnQuick[1] = new QuickslotTool(64, 0, 22, 24, 1) );
-		add( btnQuick[0] = new QuickslotTool(64, 0, 22, 24, 0) );
-		
 		add(btnWait = new Tool(24, 0, 20, 26) {
 			@Override
 			protected void onClick() {
 				examining = false;
 				Dungeon.hero.rest(false);
 			}
-			
-			@Override
-			public GameAction keyAction() {
-				return SPDAction.WAIT;
-			}
-			
+
 			protected boolean onLongClick() {
 				examining = false;
 				Dungeon.hero.rest(true);
 				return true;
 			}
-		});
 
-		add(new Button(){
-			@Override
-			protected void onClick() {
-				examining = false;
-				Dungeon.hero.rest(true);
-			}
-
-			@Override
-			public GameAction keyAction() {
-				return SPDAction.REST;
-			}
+			;
 		});
 		
 		add(btnSearch = new Tool(44, 0, 20, 26) {
@@ -124,18 +99,23 @@ public class Toolbar extends Component {
 					Dungeon.hero.search(true);
 				}
 			}
-			
-			@Override
-			public GameAction keyAction() {
-				return SPDAction.SEARCH;
-			}
-			
+
 			@Override
 			protected boolean onLongClick() {
 				Dungeon.hero.search(true);
 				return true;
 			}
 		});
+
+		btnQuick = new QuickslotTool[4];
+
+		add( btnQuick[3] = new QuickslotTool( 64, 0, 22, 24, 3) );
+
+		add( btnQuick[2] = new QuickslotTool( 64, 0, 22, 24, 2) );
+
+		add(btnQuick[1] = new QuickslotTool(64, 0, 22, 24, 1));
+
+		add(btnQuick[0] = new QuickslotTool(64, 0, 22, 24, 0));
 		
 		add(btnInventory = new Tool(0, 0, 24, 26) {
 			private GoldIndicator gold;
@@ -143,11 +123,6 @@ public class Toolbar extends Component {
 			@Override
 			protected void onClick() {
 				GameScene.show(new WndBag(Dungeon.hero.belongings.backpack, null, WndBag.Mode.ALL, null));
-			}
-			
-			@Override
-			public GameAction keyAction() {
-				return SPDAction.INVENTORY;
 			}
 			
 			@Override
@@ -164,11 +139,15 @@ public class Toolbar extends Component {
 				add(gold);
 			}
 
+			;
+
 			@Override
 			protected void layout() {
 				super.layout();
 				gold.fill(this);
 			}
+
+			;
 		});
 
 		add(pickedUp = new PickedUpItem());
@@ -177,19 +156,44 @@ public class Toolbar extends Component {
 	@Override
 	protected void layout() {
 
+		int[] visible = new int[4];
+		int slots = SPDSettings.quickSlots();
+
+		for(int i = 0; i <= 3; i++)
+			visible[i] = (int)((slots > i) ? y+2 : y+25);
+
 		for(int i = 0; i <= 3; i++) {
-			if (i == 0 && !SPDSettings.flipToolbar() ||
-				i == 3 && SPDSettings.flipToolbar()){
-				btnQuick[i].border(0, 2);
-				btnQuick[i].frame(106, 0, 19, 24);
-			} else if (i == 0 && SPDSettings.flipToolbar() ||
-					i == 3 && !SPDSettings.flipToolbar()){
-				btnQuick[i].border(2, 1);
-				btnQuick[i].frame(86, 0, 20, 24);
+			btnQuick[i].visible = btnQuick[i].active = slots > i;
+			//decides on quickslot layout, depending on available screen size.
+			if (slots == 4 && width < 152){
+				if (width < 138){
+					if ((SPDSettings.flipToolbar() && i == 3) ||
+							(!SPDSettings.flipToolbar() && i == 0)) {
+						btnQuick[i].border(0, 0);
+						btnQuick[i].frame(88, 0, 17, 24);
+					} else {
+						btnQuick[i].border(0, 1);
+						btnQuick[i].frame(88, 0, 18, 24);
+					}
+				} else {
+					if (i == 0 && !SPDSettings.flipToolbar() ||
+						i == 3 && SPDSettings.flipToolbar()){
+						btnQuick[i].border(0, 2);
+						btnQuick[i].frame(106, 0, 19, 24);
+					} else if (i == 0 && SPDSettings.flipToolbar() ||
+							i == 3 && !SPDSettings.flipToolbar()){
+						btnQuick[i].border(2, 1);
+						btnQuick[i].frame(86, 0, 20, 24);
+					} else {
+						btnQuick[i].border(0, 1);
+						btnQuick[i].frame(88, 0, 18, 24);
+					}
+				}
 			} else {
-				btnQuick[i].border(0, 1);
-				btnQuick[i].frame(88, 0, 18, 24);
+				btnQuick[i].border(2, 2);
+				btnQuick[i].frame(64, 0, 22, 24);
 			}
+
 		}
 
 		float right = width;
@@ -200,19 +204,10 @@ public class Toolbar extends Component {
 
 				btnInventory.setPos(right - btnInventory.width(), y);
 
-				btnQuick[0].setPos(btnInventory.left() - btnQuick[0].width(), y+2);
-				btnQuick[1].setPos(btnQuick[0].left() - btnQuick[1].width(), y+2);
-				btnQuick[2].setPos(btnQuick[1].left() - btnQuick[2].width(), y+2);
-				btnQuick[3].setPos(btnQuick[2].left() - btnQuick[3].width(), y+2);
-				
-				//center the quickslots if they
-				if (btnQuick[3].left() < btnSearch.right()){
-					float diff = Math.round(btnSearch.right() - btnQuick[3].left())/2;
-					for( int i = 0; i < 4; i++){
-						btnQuick[i].setPos( btnQuick[i].left()+diff, btnQuick[i].top() );
-					}
-				}
-				
+				btnQuick[0].setPos(btnInventory.left() - btnQuick[0].width(), visible[0]);
+				btnQuick[1].setPos(btnQuick[0].left() - btnQuick[1].width(), visible[1]);
+				btnQuick[2].setPos(btnQuick[1].left() - btnQuick[2].width(), visible[2]);
+				btnQuick[3].setPos(btnQuick[2].left() - btnQuick[3].width(), visible[3]);
 				break;
 
 			//center = group but.. well.. centered, so all we need to do is pre-emptively set the right side further in.
@@ -228,18 +223,10 @@ public class Toolbar extends Component {
 				btnSearch.setPos(btnWait.left() - btnSearch.width(), y);
 				btnInventory.setPos(btnSearch.left() - btnInventory.width(), y);
 
-				btnQuick[0].setPos(btnInventory.left() - btnQuick[0].width(), y+2);
-				btnQuick[1].setPos(btnQuick[0].left() - btnQuick[1].width(), y+2);
-				btnQuick[2].setPos(btnQuick[1].left() - btnQuick[2].width(), y+2);
-				btnQuick[3].setPos(btnQuick[2].left() - btnQuick[3].width(), y+2);
-				
-				if (btnQuick[3].left() < 0){
-					float diff = -Math.round(btnQuick[3].left())/2;
-					for( int i = 0; i < 4; i++){
-						btnQuick[i].setPos( btnQuick[i].left()+diff, btnQuick[i].top() );
-					}
-				}
-				
+				btnQuick[0].setPos(btnInventory.left() - btnQuick[0].width(), visible[0]);
+				btnQuick[1].setPos(btnQuick[0].left() - btnQuick[1].width(), visible[1]);
+				btnQuick[2].setPos(btnQuick[1].left() - btnQuick[2].width(), visible[2]);
+				btnQuick[3].setPos(btnQuick[2].left() - btnQuick[3].width(), visible[3]);
 				break;
 		}
 		right = width;
@@ -251,7 +238,7 @@ public class Toolbar extends Component {
 			btnInventory.setPos( (right - btnInventory.right()), y);
 
 			for(int i = 0; i <= 3; i++) {
-				btnQuick[i].setPos( right - btnQuick[i].right(), y+2);
+				btnQuick[i].setPos( right - btnQuick[i].right(), visible[i]);
 			}
 
 		}
@@ -269,7 +256,7 @@ public class Toolbar extends Component {
 		if (lastEnabled != (Dungeon.hero.ready && Dungeon.hero.isAlive())) {
 			lastEnabled = (Dungeon.hero.ready && Dungeon.hero.isAlive());
 			
-			for (Gizmo tool : members.toArray(new Gizmo[0])) {
+			for (Gizmo tool : members) {
 				if (tool instanceof Tool) {
 					((Tool)tool).enable( lastEnabled );
 				}
@@ -324,7 +311,7 @@ public class Toolbar extends Component {
 		protected void createChildren() {
 			super.createChildren();
 			
-			base = new Image( Assets.Interfaces.TOOLBAR );
+			base = new Image( Assets.TOOLBAR );
 			add( base );
 		}
 		
@@ -337,12 +324,12 @@ public class Toolbar extends Component {
 		}
 		
 		@Override
-		protected void onPointerDown() {
+		protected void onTouchDown() {
 			base.brightness( 1.4f );
 		}
 		
 		@Override
-		protected void onPointerUp() {
+		protected void onTouchUp() {
 			if (active) {
 				base.resetColor();
 			} else {

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Recycle;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
-import com.watabou.utils.Reflection;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 
 import java.util.ArrayList;
 
@@ -86,10 +86,15 @@ public abstract class Recipe {
 		//gets a simple list of items based on inputs
 		public ArrayList<Item> getIngredients() {
 			ArrayList<Item> result = new ArrayList<>();
-			for (int i = 0; i < inputs.length; i++) {
-				Item ingredient = Reflection.newInstance(inputs[i]);
-				ingredient.quantity(inQuantity[i]);
-				result.add(ingredient);
+			try {
+				for (int i = 0; i < inputs.length; i++) {
+					Item ingredient = inputs[i].newInstance();
+					ingredient.quantity(inQuantity[i]);
+					result.add(ingredient);
+				}
+			} catch (Exception e){
+				ShatteredPixelDungeon.reportException( e );
+				return null;
 			}
 			return result;
 		}
@@ -99,6 +104,7 @@ public abstract class Recipe {
 			
 			int[] needed = inQuantity.clone();
 			
+			//TODO is this right?
 			for (Item ingredient : ingredients){
 				if (!ingredient.isIdentified()) return false;
 				for (int i = 0; i < inputs.length; i++){
@@ -149,7 +155,7 @@ public abstract class Recipe {
 		//ingredients are ignored, as output doesn't vary
 		public final Item sampleOutput(ArrayList<Item> ingredients){
 			try {
-				Item result = Reflection.newInstance(output);
+				Item result = output.newInstance();
 				result.quantity(outQuantity);
 				return result;
 			} catch (Exception e) {
@@ -237,7 +243,7 @@ public abstract class Recipe {
 	
 	public static boolean usableInRecipe(Item item){
 		return !item.cursed
-				&& (!(item instanceof EquipableItem) || (item instanceof AlchemistsToolkit && item.isIdentified()))
+				&& (!(item instanceof EquipableItem) || item instanceof Dart || item instanceof AlchemistsToolkit)
 				&& !(item instanceof Wand);
 	}
 }

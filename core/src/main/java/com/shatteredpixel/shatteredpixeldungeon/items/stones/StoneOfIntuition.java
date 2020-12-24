@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,9 +25,32 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Identification;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfExperience;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfFrost;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHaste;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibility;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLevitation;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlame;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfMindVision;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfParalyticGas;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfPurity;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfToxicGas;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
-import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfIdentify;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfLullaby;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMirrorImage;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRage;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRecharging;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTerror;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -36,33 +59,21 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
 import com.watabou.noosa.Image;
-import com.watabou.utils.Reflection;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 
 public class StoneOfIntuition extends InventoryStone {
 	
 	
 	{
-		mode = WndBag.Mode.INTUITIONABLE;
+		mode = WndBag.Mode.UNIDED_POTION_OR_SCROLL;
 		image = ItemSpriteSheet.STONE_INTUITION;
-	}
-
-	public static boolean isIntuitionable( Item item ){
-		if (item instanceof Ring){
-			return !((Ring) item).isKnown();
-		} else if (item instanceof Potion){
-			return !((Potion) item).isKnown();
-		} else if (item instanceof Scroll){
-			return !((Scroll) item).isKnown();
-		}
-		return false;
 	}
 	
 	@Override
@@ -72,7 +83,38 @@ public class StoneOfIntuition extends InventoryStone {
 		
 	}
 	
-	private static Class curGuess = null;
+	//in order of their consumable icon
+	public static Class[] potions = new Class[]{
+			PotionOfExperience.class,
+			PotionOfFrost.class,
+			PotionOfHaste.class,
+			PotionOfHealing.class,
+			PotionOfInvisibility.class,
+			PotionOfLevitation.class,
+			PotionOfLiquidFlame.class,
+			PotionOfMindVision.class,
+			PotionOfParalyticGas.class,
+			PotionOfPurity.class,
+			PotionOfStrength.class,
+			PotionOfToxicGas.class
+	};
+	
+	public static Class[] scrolls = new Class[]{
+			ScrollOfIdentify.class,
+			ScrollOfLullaby.class,
+			ScrollOfMagicMapping.class,
+			ScrollOfMirrorImage.class,
+			ScrollOfRetribution.class,
+			ScrollOfRage.class,
+			ScrollOfRecharging.class,
+			ScrollOfRemoveCurse.class,
+			ScrollOfTeleportation.class,
+			ScrollOfTerror.class,
+			ScrollOfTransmutation.class,
+			ScrollOfUpgrade.class
+	};
+	
+	static Class curGuess = null;
 	
 	public class WndGuess extends Window {
 		
@@ -83,11 +125,11 @@ public class StoneOfIntuition extends InventoryStone {
 			
 			IconTitle titlebar = new IconTitle();
 			titlebar.icon( new ItemSprite(ItemSpriteSheet.STONE_INTUITION, null) );
-			titlebar.label( Messages.titleCase(Messages.get(StoneOfIntuition.class, "name")) );
+			titlebar.label( Messages.get(StoneOfIntuition.class, "name") );
 			titlebar.setRect( 0, 0, WIDTH, 0 );
 			add( titlebar );
 			
-			RenderedTextBlock text = PixelScene.renderTextBlock(6);
+			RenderedTextMultiline text = PixelScene.renderMultiline(6);
 			text.text( Messages.get(this, "text") );
 			text.setPos(0, titlebar.bottom());
 			text.maxWidth( WIDTH );
@@ -99,11 +141,7 @@ public class StoneOfIntuition extends InventoryStone {
 					super.onClick();
 					useAnimation();
 					if (item.getClass() == curGuess){
-						if (item instanceof Ring){
-							((Ring) item).setKnown();
-						} else {
-							item.identify();
-						}
+						item.identify();
 						GLog.p( Messages.get(WndGuess.class, "correct") );
 						curUser.sprite.parent.add( new Identification( curUser.sprite.center().offset( 0, -16 ) ) );
 					} else {
@@ -124,34 +162,51 @@ public class StoneOfIntuition extends InventoryStone {
 			int rows;
 			int placed = 0;
 			
-			final ArrayList<Class<?extends Item>> unIDed = new ArrayList<>();
+			HashSet<Class<?extends Item>> unIDed = new HashSet<>();
+			final Class[] all;
+			
+			final int row;
 			if (item.isIdentified()){
 				hide();
 				return;
 			} else if (item instanceof Potion){
-				if (item instanceof ExoticPotion) {
-					for (Class<?extends Item> i : Potion.getUnknown()){
-						unIDed.add(ExoticPotion.regToExo.get(i));
+				unIDed.addAll(Potion.getUnknown());
+				all = potions.clone();
+				if (item instanceof ExoticPotion){
+					row = 8;
+					for (int i = 0; i < all.length; i++){
+						all[i] = ExoticPotion.regToExo.get(all[i]);
 					}
+					HashSet<Class<?extends Item>> exoUID = new HashSet<>();
+					for (Class<?extends Item> i : unIDed){
+						exoUID.add(ExoticPotion.regToExo.get(i));
+					}
+					unIDed = exoUID;
 				} else {
-					unIDed.addAll(Potion.getUnknown());
+					row = 0;
 				}
 			} else if (item instanceof Scroll){
-				if (item instanceof ExoticScroll) {
-					for (Class<?extends Item> i : Scroll.getUnknown()){
-						unIDed.add(ExoticScroll.regToExo.get(i));
+				unIDed.addAll(Scroll.getUnknown());
+				all = scrolls.clone();
+				if (item instanceof ExoticScroll){
+					row = 24;
+					for (int i = 0; i < all.length; i++){
+						all[i] = ExoticScroll.regToExo.get(all[i]);
 					}
+					HashSet<Class<?extends Item>> exoUID = new HashSet<>();
+					for (Class<?extends Item> i : unIDed){
+						exoUID.add(ExoticScroll.regToExo.get(i));
+					}
+					unIDed = exoUID;
 				} else {
-					unIDed.addAll(Scroll.getUnknown());
+					row = 16;
 				}
-			} else if (item instanceof Ring) {
-				unIDed.addAll(Ring.getUnknown());
 			} else {
 				hide();
 				return;
 			}
 			
-			if (unIDed.size() <= 5){
+			if (unIDed.size() < 6){
 				rows = 1;
 				top += BTN_SIZE/2f;
 				left = (WIDTH - BTN_SIZE*unIDed.size())/2f;
@@ -160,20 +215,23 @@ public class StoneOfIntuition extends InventoryStone {
 				left = (WIDTH - BTN_SIZE*((unIDed.size()+1)/2))/2f;
 			}
 			
-			for (final Class<?extends Item> i : unIDed){
-
+			for (int i = 0; i < all.length; i++){
+				if (!unIDed.contains(all[i])) {
+					continue;
+				}
+				
+				final int j = i;
 				IconButton btn = new IconButton(){
 					@Override
 					protected void onClick() {
-						curGuess = i;
+						curGuess = all[j];
 						guess.visible = true;
-						guess.text( Messages.titleCase(Messages.get(curGuess, "name")) );
+						guess.text( Messages.get(curGuess, "name") );
 						guess.enable(true);
 						super.onClick();
 					}
 				};
-				Image im = new Image(Assets.Sprites.ITEM_ICONS);
-				im.frame(ItemSpriteSheet.Icons.film.get(Reflection.newInstance(i).icon));
+				Image im = new Image(Assets.CONS_ICONS, 7*i, row, 7, 8);
 				im.scale.set(2f);
 				btn.icon(im);
 				btn.setRect(left + placed*BTN_SIZE, top, BTN_SIZE, BTN_SIZE);

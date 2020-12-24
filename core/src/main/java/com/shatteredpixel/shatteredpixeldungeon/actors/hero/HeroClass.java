@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.VelvetPouch;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
+import com.shatteredpixel.shatteredpixeldungeon.items.food.SmallRation;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibility;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlame;
@@ -72,7 +73,6 @@ public enum HeroClass {
 	public void initHero( Hero hero ) {
 
 		hero.heroClass = this;
-		Talent.initClassTalents(hero);
 
 		initCommon( hero );
 
@@ -93,7 +93,7 @@ public enum HeroClass {
 				initHuntress( hero );
 				break;
 		}
-
+		
 	}
 
 	private static void initCommon( Hero hero ) {
@@ -103,6 +103,10 @@ public enum HeroClass {
 		i = new Food();
 		if (!Challenges.isItemBlocked(i)) i.collect();
 
+		if (Dungeon.isChallenged(Challenges.NO_FOOD)){
+			new SmallRation().collect();
+		}
+		
 		new ScrollOfIdentify().identify();
 
 	}
@@ -130,17 +134,17 @@ public enum HeroClass {
 		if (hero.belongings.armor != null){
 			hero.belongings.armor.affixSeal(new BrokenSeal());
 		}
-
+		
 		new PotionBandolier().collect();
 		Dungeon.LimitedDrops.POTION_BANDOLIER.drop();
-
+		
 		new PotionOfHealing().identify();
 		new ScrollOfRage().identify();
 	}
 
 	private static void initMage( Hero hero ) {
 		MagesStaff staff;
-
+		
 		staff = new MagesStaff(new WandOfMagicMissile());
 
 		(hero.belongings.weapon = staff).identify();
@@ -150,7 +154,7 @@ public enum HeroClass {
 
 		new ScrollHolder().collect();
 		Dungeon.LimitedDrops.SCROLL_HOLDER.drop();
-
+		
 		new ScrollOfUpgrade().identify();
 		new PotionOfLiquidFlame().identify();
 	}
@@ -159,8 +163,8 @@ public enum HeroClass {
 		(hero.belongings.weapon = new Dagger()).identify();
 
 		CloakOfShadows cloak = new CloakOfShadows();
-		(hero.belongings.artifact = cloak).identify();
-		hero.belongings.artifact.activate( hero );
+		(hero.belongings.misc1 = cloak).identify();
+		hero.belongings.misc1.activate( hero );
 
 		ThrowingKnife knives = new ThrowingKnife();
 		knives.quantity(3).collect();
@@ -170,7 +174,7 @@ public enum HeroClass {
 
 		new VelvetPouch().collect();
 		Dungeon.LimitedDrops.VELVET_POUCH.drop();
-
+		
 		new ScrollOfMagicMapping().identify();
 		new PotionOfInvisibility().identify();
 	}
@@ -185,42 +189,29 @@ public enum HeroClass {
 
 		new VelvetPouch().collect();
 		Dungeon.LimitedDrops.VELVET_POUCH.drop();
-
+		
 		new PotionOfMindVision().identify();
 		new ScrollOfLullaby().identify();
 	}
-
+	
 	public String title() {
 		return Messages.get(HeroClass.class, title);
 	}
-
+	
 	public HeroSubClass[] subClasses() {
 		return subClasses;
 	}
-
+	
 	public String spritesheet() {
 		switch (this) {
 			case WARRIOR: default:
-				return Assets.Sprites.WARRIOR;
+				return Assets.WARRIOR;
 			case MAGE:
-				return Assets.Sprites.MAGE;
+				return Assets.MAGE;
 			case ROGUE:
-				return Assets.Sprites.ROGUE;
+				return Assets.ROGUE;
 			case HUNTRESS:
-				return Assets.Sprites.HUNTRESS;
-		}
-	}
-
-	public String splashArt(){
-		switch (this) {
-			case WARRIOR: default:
-				return Assets.Splashes.WARRIOR;
-			case MAGE:
-				return Assets.Splashes.MAGE;
-			case ROGUE:
-				return Assets.Splashes.ROGUE;
-			case HUNTRESS:
-				return Assets.Splashes.HUNTRESS;
+				return Assets.HUNTRESS;
 		}
 	}
 	

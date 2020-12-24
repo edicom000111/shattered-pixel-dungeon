@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,10 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfStormClouds;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
@@ -48,7 +51,14 @@ public class AquaBlast extends TargetedSpell {
 		
 		for (int i : PathFinder.NEIGHBOURS9){
 			if (i == 0 || Random.Int(5) != 0){
-				Dungeon.level.setCellToWater(false, cell+i);
+				int terr = Dungeon.level.map[cell + i];
+				if (terr == Terrain.EMPTY || terr == Terrain.GRASS ||
+						terr == Terrain.EMBERS || terr == Terrain.EMPTY_SP ||
+						terr == Terrain.HIGH_GRASS || terr == Terrain.FURROWED_GRASS ||
+						terr == Terrain.EMPTY_DECO) {
+					Level.set(cell + i, Terrain.WATER);
+					GameScene.updateMap(cell + i);
+				}
 			}
 		}
 		
@@ -56,12 +66,12 @@ public class AquaBlast extends TargetedSpell {
 		
 		if (target != null && target != hero){
 			//just enough to skip their current turn
-			Buff.affect(target, Paralysis.class, target.cooldown());
+			Buff.affect(target, Paralysis.class, 0f);
 		}
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		//prices of ingredients, divided by output quantity
 		return Math.round(quantity * ((60 + 40) / 12f));
 	}

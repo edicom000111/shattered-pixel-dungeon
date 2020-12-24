@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,10 +23,10 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfFuror;
@@ -42,10 +42,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blazin
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blocking;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blooming;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Chilling;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Kinetic;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Corrupting;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Elastic;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Grim;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Kinetic;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Lucky;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Projecting;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocking;
@@ -57,7 +57,6 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -93,7 +92,7 @@ abstract public class Weapon extends KindOfWeapon {
 	public Augment augment = Augment.NONE;
 	
 	private static final int USES_TO_ID = 20;
-	private float usesLeftToID = USES_TO_ID;
+	private int usesLeftToID = USES_TO_ID;
 	private float availableUsesToID = USES_TO_ID/2f;
 	
 	public Enchantment enchantment;
@@ -106,10 +105,9 @@ abstract public class Weapon extends KindOfWeapon {
 			damage = enchantment.proc( this, attacker, defender, damage );
 		}
 		
-		if (!levelKnown && attacker == Dungeon.hero) {
-			float uses = Math.min( availableUsesToID, Talent.itemIDSpeedFactor(Dungeon.hero, this) );
-			availableUsesToID -= uses;
-			usesLeftToID -= uses;
+		if (!levelKnown && attacker == Dungeon.hero && availableUsesToID >= 1) {
+			availableUsesToID--;
+			usesLeftToID--;
 			if (usesLeftToID <= 0) {
 				identify();
 				GLog.p( Messages.get(Weapon.class, "identify") );
@@ -121,7 +119,6 @@ abstract public class Weapon extends KindOfWeapon {
 	}
 	
 	public void onHeroGainExp( float levelPercent, Hero hero ){
-		levelPercent *= Talent.itemIDSpeedFactor(hero, this);
 		if (!levelKnown && isEquipped(hero) && availableUsesToID <= USES_TO_ID/2f) {
 			//gains enough uses to ID over 0.5 levels
 			availableUsesToID = Math.min(USES_TO_ID/2f, availableUsesToID + levelPercent * USES_TO_ID);
@@ -147,11 +144,17 @@ abstract public class Weapon extends KindOfWeapon {
 	@Override
 	public void restoreFromBundle( Bundle bundle ) {
 		super.restoreFromBundle( bundle );
-		usesLeftToID = bundle.getFloat( USES_LEFT_TO_ID );
-		availableUsesToID = bundle.getFloat( AVAILABLE_USES );
+		usesLeftToID = bundle.getInt( USES_LEFT_TO_ID );
+		availableUsesToID = bundle.getInt( AVAILABLE_USES );
 		enchantment = (Enchantment)bundle.get( ENCHANTMENT );
 		curseInfusionBonus = bundle.getBoolean( CURSE_INFUSION_BONUS );
-
+		
+		//pre-0.7.2 saves
+		if (bundle.contains( "unfamiliarity" )){
+			usesLeftToID = bundle.getInt( "unfamiliarity" );
+			availableUsesToID = USES_TO_ID/2f;
+		}
+		
 		augment = bundle.getEnum(AUGMENT, Augment.class);
 	}
 	
@@ -208,16 +211,6 @@ abstract public class Weapon extends KindOfWeapon {
 	@Override
 	public int level() {
 		return super.level() + (curseInfusionBonus ? 1 : 0);
-	}
-	
-	//overrides as other things can equip these
-	@Override
-	public int buffedLvl() {
-		if (isEquipped( Dungeon.hero ) || Dungeon.hero.belongings.contains( this )){
-			return super.buffedLvl();
-		} else {
-			return level();
-		}
 	}
 	
 	@Override
@@ -378,45 +371,65 @@ abstract public class Weapon extends KindOfWeapon {
 		
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomCommon( Class<? extends Enchantment> ... toIgnore ) {
-			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(common));
-			enchants.removeAll(Arrays.asList(toIgnore));
-			if (enchants.isEmpty()) {
-				return random();
-			} else {
-				return (Enchantment) Reflection.newInstance(Random.element(enchants));
+			try {
+				ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(common));
+				enchants.removeAll(Arrays.asList(toIgnore));
+				if (enchants.isEmpty()) {
+					return random();
+				} else {
+					return (Enchantment) Random.element(enchants).newInstance();
+				}
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+				return null;
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomUncommon( Class<? extends Enchantment> ... toIgnore ) {
-			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(uncommon));
-			enchants.removeAll(Arrays.asList(toIgnore));
-			if (enchants.isEmpty()) {
-				return random();
-			} else {
-				return (Enchantment) Reflection.newInstance(Random.element(enchants));
+			try {
+				ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(uncommon));
+				enchants.removeAll(Arrays.asList(toIgnore));
+				if (enchants.isEmpty()) {
+					return random();
+				} else {
+					return (Enchantment) Random.element(enchants).newInstance();
+				}
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+				return null;
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomRare( Class<? extends Enchantment> ... toIgnore ) {
-			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(rare));
-			enchants.removeAll(Arrays.asList(toIgnore));
-			if (enchants.isEmpty()) {
-				return random();
-			} else {
-				return (Enchantment) Reflection.newInstance(Random.element(enchants));
+			try {
+				ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(rare));
+				enchants.removeAll(Arrays.asList(toIgnore));
+				if (enchants.isEmpty()) {
+					return random();
+				} else {
+					return (Enchantment) Random.element(enchants).newInstance();
+				}
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+				return null;
 			}
 		}
 
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomCurse( Class<? extends Enchantment> ... toIgnore ){
-			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(curses));
-			enchants.removeAll(Arrays.asList(toIgnore));
-			if (enchants.isEmpty()) {
-				return random();
-			} else {
-				return (Enchantment) Reflection.newInstance(Random.element(enchants));
+			try {
+				ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(curses));
+				enchants.removeAll(Arrays.asList(toIgnore));
+				if (enchants.isEmpty()) {
+					return random();
+				} else {
+					return (Enchantment) Random.element(enchants).newInstance();
+				}
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+				return null;
 			}
 		}
 		

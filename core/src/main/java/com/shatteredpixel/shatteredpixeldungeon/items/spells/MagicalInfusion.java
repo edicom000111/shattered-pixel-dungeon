@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,9 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
-import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
@@ -40,8 +38,6 @@ public class MagicalInfusion extends InventorySpell {
 	{
 		mode = WndBag.Mode.UPGRADEABLE;
 		image = ItemSpriteSheet.MAGIC_INFUSE;
-
-		unique = true;
 	}
 	
 	@Override
@@ -56,7 +52,7 @@ public class MagicalInfusion extends InventorySpell {
 		}
 		
 		GLog.p( Messages.get(this, "infuse", item.name()) );
-		Talent.onUpgradeScrollUsed( Dungeon.hero );
+		
 		Badges.validateItemLevelAquired(item);
 
 		curUser.sprite.emitter().start(Speck.factory(Speck.UP), 0.2f, 3);
@@ -64,7 +60,7 @@ public class MagicalInfusion extends InventorySpell {
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		//prices of ingredients, divided by output quantity
 		return Math.round(quantity * ((50 + 40) / 1f));
 	}

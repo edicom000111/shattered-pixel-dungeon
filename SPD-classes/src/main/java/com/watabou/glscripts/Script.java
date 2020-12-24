@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,14 +23,14 @@ package com.watabou.glscripts;
 
 import com.watabou.glwrap.Program;
 import com.watabou.glwrap.Shader;
-import com.watabou.utils.Reflection;
+import com.watabou.noosa.Game;
 
 import java.util.HashMap;
 
 public class Script extends Program {
 
 	private static final HashMap<Class<? extends Script>,Script> all =
-			new HashMap<>();
+		new HashMap<Class<? extends Script>, Script>();
 	
 	private static Script curScript = null;
 	private static Class<? extends Script> curScriptClass = null;
@@ -42,7 +42,11 @@ public class Script extends Program {
 			
 			Script script = all.get( c );
 			if (script == null) {
-				script = Reflection.newInstance( c );
+				try {
+					script = c.newInstance();
+				} catch (Exception e) {
+					Game.reportException(e);
+				}
 				all.put( c, script );
 			}
 			

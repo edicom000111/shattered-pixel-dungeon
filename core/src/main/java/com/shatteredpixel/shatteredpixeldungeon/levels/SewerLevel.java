@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,16 +57,14 @@ public class SewerLevel extends RegularLevel {
 	}
 	
 	@Override
-	protected int standardRooms(boolean forceMax) {
-		if (forceMax) return 7;
+	protected int standardRooms() {
 		//5 to 7, average 5.57
 		return 5+Random.chances(new float[]{4, 2, 1});
 	}
 	
 	@Override
-	protected int specialRooms(boolean forceMax) {
-		if (forceMax) return 3;
-		//1 to 3, average 1.8
+	protected int specialRooms() {
+		//1 to 3, average 1.67
 		return 1+Random.chances(new float[]{4, 4, 2});
 	}
 	
@@ -80,20 +78,19 @@ public class SewerLevel extends RegularLevel {
 	
 	@Override
 	public String tilesTex() {
-		return Assets.Environment.TILES_SEWERS;
+		return Assets.TILES_SEWERS;
 	}
 	
 	@Override
 	public String waterTex() {
-		return Assets.Environment.WATER_SEWERS;
+		return Assets.WATER_SEWERS;
 	}
 	
 	@Override
 	protected Class<?>[] trapClasses() {
 		return Dungeon.depth == 1 ?
 				new Class<?>[]{ WornDartTrap.class } :
-				new Class<?>[]{
-						ChillingTrap.class, ShockingTrap.class, ToxicTrap.class, WornDartTrap.class,
+				new Class<?>[]{ ChillingTrap.class, ShockingTrap.class, ToxicTrap.class, WornDartTrap.class,
 						AlarmTrap.class, OozeTrap.class,
 						ConfusionTrap.class, FlockTrap.class, SummoningTrap.class, TeleportationTrap.class };
 }
@@ -102,10 +99,9 @@ public class SewerLevel extends RegularLevel {
 	protected float[] trapChances() {
 		return Dungeon.depth == 1 ?
 				new float[]{1} :
-				new float[]{
-						4, 4, 4, 4,
-						2, 2,
-						1, 1, 1, 1};
+				new float[]{8, 8, 8, 8,
+						4, 4,
+						2, 2, 2, 2};
 	}
 	
 	@Override
@@ -188,7 +184,7 @@ public class SewerLevel extends RegularLevel {
 				
 				super.update();
 				
-				if (!isFrozen() && (rippleDelay -= Game.elapsed) <= 0) {
+				if ((rippleDelay -= Game.elapsed) <= 0) {
 					Ripple ripple = GameScene.ripple( pos + Dungeon.level.width() );
 					if (ripple != null) {
 						ripple.y -= DungeonTilemap.SIZE / 2;

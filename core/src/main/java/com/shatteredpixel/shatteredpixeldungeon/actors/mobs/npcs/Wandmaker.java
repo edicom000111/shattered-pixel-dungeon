@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,10 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.WandmakerSprite;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndQuest;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndWandmaker;
-import com.watabou.noosa.Game;
 import com.watabou.utils.Bundle;
-import com.watabou.utils.Callback;
-import com.watabou.utils.Point;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
@@ -60,15 +57,13 @@ public class Wandmaker extends NPC {
 	
 	@Override
 	protected boolean act() {
-		if (Dungeon.level.heroFOV[pos] && Quest.wand1 != null){
-			Notes.add( Notes.Landmark.WANDMAKER );
-		}
+		throwItem();
 		return super.act();
 	}
 	
 	@Override
 	public int defenseSkill( Char enemy ) {
-		return INFINITE_EVASION;
+		return 1000;
 	}
 	
 	@Override
@@ -85,13 +80,9 @@ public class Wandmaker extends NPC {
 	}
 	
 	@Override
-	public boolean interact(Char c) {
+	public boolean interact() {
+		
 		sprite.turnTo( pos, Dungeon.hero.pos );
-
-		if (c != Dungeon.hero){
-			return true;
-		}
-
 		if (Quest.given) {
 			
 			Item item;
@@ -109,31 +100,21 @@ public class Wandmaker extends NPC {
 			}
 
 			if (item != null) {
-				Game.runOnRenderThread(new Callback() {
-					@Override
-					public void call() {
-						GameScene.show( new WndWandmaker( Wandmaker.this, item ) );
-					}
-				});
+				GameScene.show( new WndWandmaker( this, item ) );
 			} else {
-				String msg;
+				String msg = "";
 				switch(Quest.type){
-					case 1: default:
-						msg = Messages.get(this, "reminder_dust", Dungeon.hero.name());
+					case 1:
+						msg = Messages.get(this, "reminder_dust", Dungeon.hero.givenName());
 						break;
 					case 2:
-						msg = Messages.get(this, "reminder_ember", Dungeon.hero.name());
+						msg = Messages.get(this, "reminder_ember", Dungeon.hero.givenName());
 						break;
 					case 3:
-						msg = Messages.get(this, "reminder_berry", Dungeon.hero.name());
+						msg = Messages.get(this, "reminder_berry", Dungeon.hero.givenName());
 						break;
 				}
-				Game.runOnRenderThread(new Callback() {
-					@Override
-					public void call() {
-						GameScene.show(new WndQuest(Wandmaker.this, msg));
-					}
-				});
+				GameScene.show(new WndQuest(this, msg));
 			}
 			
 		} else {
@@ -148,7 +129,7 @@ public class Wandmaker extends NPC {
 					msg1 += Messages.get(this, "intro_rogue");
 					break;
 				case MAGE:
-					msg1 += Messages.get(this, "intro_mage", Dungeon.hero.name());
+					msg1 += Messages.get(this, "intro_mage", Dungeon.hero.givenName());
 					break;
 				case HUNTRESS:
 					msg1 += Messages.get(this, "intro_huntress");
@@ -170,27 +151,22 @@ public class Wandmaker extends NPC {
 			}
 
 			msg2 += Messages.get(this, "intro_2");
-			final String msg1Final = msg1;
-			final String msg2Final = msg2;
-			
-			Game.runOnRenderThread(new Callback() {
+			final String msg2final = msg2;
+			final NPC wandmaker = this;
+
+			GameScene.show(new WndQuest(wandmaker, msg1){
 				@Override
-				public void call() {
-					GameScene.show(new WndQuest(Wandmaker.this, msg1Final){
-						@Override
-						public void hide() {
-							super.hide();
-							GameScene.show(new WndQuest(Wandmaker.this, msg2Final));
-						}
-					});
+				public void hide() {
+					super.hide();
+					GameScene.show(new WndQuest(wandmaker, msg2final));
 				}
 			});
 
-			Quest.given = true;
 			Notes.add( Notes.Landmark.WANDMAKER );
+			Quest.given = true;
 		}
 
-		return true;
+		return false;
 	}
 	
 	public static class Quest {
@@ -279,23 +255,9 @@ public class Wandmaker extends NPC {
 				questRoomSpawned = false;
 				
 				Wandmaker npc = new Wandmaker();
-				boolean validPos;
-				//Do not spawn wandmaker on the entrance, a trap, or in front of a door.
 				do {
-					validPos = true;
 					npc.pos = level.pointToCell(room.random());
-					if (npc.pos == level.entrance){
-						validPos = false;
-					}
-					for (Point door : room.connected.values()){
-						if (level.trueDistance( npc.pos, level.pointToCell( door ) ) <= 1){
-							validPos = false;
-						}
-					}
-					if (level.traps.get(npc.pos) != null){
-						validPos = false;
-					}
-				} while (!validPos);
+				} while (npc.pos == level.entrance);
 				level.mobs.add( npc );
 
 				spawned = true;

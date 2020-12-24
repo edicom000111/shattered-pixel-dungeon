@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,12 +22,12 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.blobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BlobEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Rect;
-import com.watabou.utils.Reflection;
 
 public class Blob extends Actor {
 
@@ -43,8 +43,6 @@ public class Blob extends Actor {
 	public BlobEmitter emitter;
 
 	public Rect area = new Rect();
-	
-	public boolean alwaysVisible = false;
 
 	private static final String CUR		= "cur";
 	private static final String START	= "start";
@@ -121,11 +119,7 @@ public class Blob extends Actor {
 			cur = tmp;
 			
 		} else {
-			if (!area.isEmpty()) {
-				area.setEmpty();
-				//clear any values remaining in off
-				System.arraycopy(cur, 0, off, 0, cur.length);
-			}
+			area.setEmpty();
 		}
 		
 		return true;
@@ -229,19 +223,22 @@ public class Blob extends Actor {
 	
 	@SuppressWarnings("unchecked")
 	public static<T extends Blob> T seed( int cell, int amount, Class<T> type, Level level ) {
-		
-		T gas = (T)level.blobs.get( type );
-		
-		if (gas == null) {
-			gas = Reflection.newInstance(type);
-		}
-		
-		if (gas != null){
-			level.blobs.put( type, gas );
+		try {
+			
+			T gas = (T)level.blobs.get( type );
+			if (gas == null) {
+				gas = type.newInstance();
+				level.blobs.put( type, gas );
+			}
+			
 			gas.seed( level, cell, amount );
+			
+			return gas;
+			
+		} catch (Exception e) {
+			ShatteredPixelDungeon.reportException(e);
+			return null;
 		}
-		
-		return gas;
 	}
 
 	public static int volumeAt( int cell, Class<? extends Blob> type){

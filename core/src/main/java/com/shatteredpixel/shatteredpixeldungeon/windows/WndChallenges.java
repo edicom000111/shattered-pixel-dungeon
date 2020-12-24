@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,16 +29,16 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.watabou.noosa.RenderedText;
 
 import java.util.ArrayList;
 
 public class WndChallenges extends Window {
 
 	private static final int WIDTH		= 120;
-	private static final int TTL_HEIGHT = 16;
-	private static final int BTN_HEIGHT = 16;
+	private static final int TTL_HEIGHT    = 12;
+	private static final int BTN_HEIGHT    = 18;
 	private static final int GAP        = 1;
 
 	private boolean editable;
@@ -50,12 +50,10 @@ public class WndChallenges extends Window {
 
 		this.editable = editable;
 
-		RenderedTextBlock title = PixelScene.renderTextBlock( Messages.get(this, "title"), 12 );
+		RenderedText title = PixelScene.renderText( Messages.get(this, "title"), 9 );
 		title.hardlight( TITLE_COLOR );
-		title.setPos(
-				(WIDTH - title.width()) / 2,
-				(TTL_HEIGHT - title.height()) / 2
-		);
+		title.x = (WIDTH - title.width()) / 2;
+		title.y = (TTL_HEIGHT - title.height()) / 2;
 		PixelScene.align(title);
 		add( title );
 
@@ -66,7 +64,7 @@ public class WndChallenges extends Window {
 
 			final String challenge = Challenges.NAME_IDS[i];
 			
-			CheckBox cb = new CheckBox( Messages.titleCase(Messages.get(Challenges.class, challenge)) );
+			CheckBox cb = new CheckBox( Messages.get(Challenges.class, challenge) );
 			cb.checked( (checked & Challenges.MASKS[i]) != 0 );
 			cb.active = editable;
 

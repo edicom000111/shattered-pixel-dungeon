@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 package com.watabou.glwrap;
 
-import com.badlogic.gdx.Gdx;
+import android.opengl.GLES20;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -59,19 +59,21 @@ public class Quad {
 	public static void setupIndices(){
 		ShortBuffer indices = getIndices( Short.MAX_VALUE );
 		if (bufferIndex == -1){
-			bufferIndex = Gdx.gl.glGenBuffer();
+			int[] buf = new int[1];
+			GLES20.glGenBuffers(1, buf, 0);
+			bufferIndex = buf[0];
 		}
-		Gdx.gl.glBindBuffer(Gdx.gl.GL_ELEMENT_ARRAY_BUFFER, bufferIndex);
-		Gdx.gl.glBufferData(Gdx.gl.GL_ELEMENT_ARRAY_BUFFER, (indices.capacity()*2), indices, Gdx.gl.GL_STATIC_DRAW);
-		Gdx.gl.glBindBuffer(Gdx.gl.GL_ELEMENT_ARRAY_BUFFER, 0);
+		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, bufferIndex);
+		GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, (indices.capacity()*2), indices, GLES20.GL_STATIC_DRAW);
+		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
 
 	public static void bindIndices(){
-		Gdx.gl.glBindBuffer(Gdx.gl.GL_ELEMENT_ARRAY_BUFFER, bufferIndex);
+		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, bufferIndex);
 	}
 
 	public static void releaseIndices(){
-		Gdx.gl.glBindBuffer(Gdx.gl.GL_ELEMENT_ARRAY_BUFFER, 0);
+		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
 	
 	public static ShortBuffer getIndices( int size ) {

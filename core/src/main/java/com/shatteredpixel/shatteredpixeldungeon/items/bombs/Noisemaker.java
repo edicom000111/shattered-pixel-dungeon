@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,9 @@ package com.shatteredpixel.shatteredpixeldungeon.items.bombs;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
@@ -45,10 +47,20 @@ public class Noisemaker extends Bomb {
 		Buff.affect(Dungeon.hero, Trigger.class).set(cell);
 
 		CellEmitter.center( cell ).start( Speck.factory( Speck.SCREAM ), 0.3f, 3 );
-		Sample.INSTANCE.play( Assets.Sounds.ALERT );
+		Sample.INSTANCE.play( Assets.SND_ALERT );
 
 		for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
 			mob.beckon( cell );
+		}
+
+		for (Heap heap : Dungeon.level.heaps.values()) {
+			if (heap.type == Heap.Type.MIMIC) {
+				Mimic m = Mimic.spawnAt( heap.pos, heap.items );
+				if (m != null) {
+					m.beckon( cell );
+					heap.destroy();
+				}
+			}
 		}
 
 	}
@@ -105,7 +117,7 @@ public class Noisemaker extends Bomb {
 
 				if (left <= 0){
 					CellEmitter.center( cell ).start( Speck.factory( Speck.SCREAM ), 0.3f, 3 );
-					Sample.INSTANCE.play( Assets.Sounds.ALERT );
+					Sample.INSTANCE.play( Assets.SND_ALERT );
 
 					for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
 						mob.beckon( cell );
@@ -140,7 +152,7 @@ public class Noisemaker extends Bomb {
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		//prices of ingredients
 		return quantity * (20 + 40);
 	}

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,6 +62,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Recycle;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene;
@@ -73,7 +75,6 @@ import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.ui.Component;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -114,19 +115,19 @@ public class QuickRecipe extends Component {
 			}
 			
 			if (quantity < in.quantity()) {
-				curr.sprite.alpha(0.3f);
+				curr.icon.alpha(0.3f);
 				hasInputs = false;
 			}
-			curr.showExtraInfo(false);
+			curr.showParams(true, false, true);
 			add(curr);
 			this.inputs.add(curr);
 		}
 		
 		if (cost > 0) {
-			arrow = new arrow(Icons.get(Icons.ARROW), cost);
+			arrow = new arrow(Icons.get(Icons.RESUME), cost);
 			arrow.hardlightText(0x00CCFF);
 		} else {
-			arrow = new arrow(Icons.get(Icons.ARROW));
+			arrow = new arrow(Icons.get(Icons.RESUME));
 		}
 		if (hasInputs) {
 			arrow.icon.tint(1, 1, 0, 1);
@@ -147,9 +148,9 @@ public class QuickRecipe extends Component {
 			}
 		};
 		if (!hasInputs){
-			this.output.sprite.alpha(0.3f);
+			this.output.icon.alpha(0.3f);
 		}
-		this.output.showExtraInfo(false);
+		this.output.showParams(true, false, true);
 		add(this.output);
 		
 		layout();
@@ -242,11 +243,10 @@ public class QuickRecipe extends Component {
 		switch (pageIdx){
 			case 0: default:
 				result.add(new QuickRecipe( new Potion.SeedToPotion(), new ArrayList<>(Arrays.asList(new Plant.Seed.PlaceHolder().quantity(3))), new WndBag.Placeholder(ItemSpriteSheet.POTION_HOLDER){
-					@Override
-					public String name() {
-						return Messages.get(Potion.SeedToPotion.class, "name");
+					{
+						name = Messages.get(Potion.SeedToPotion.class, "name");
 					}
-
+					
 					@Override
 					public String info() {
 						return "";
@@ -256,10 +256,14 @@ public class QuickRecipe extends Component {
 			case 1:
 				Recipe r = new Scroll.ScrollToStone();
 				for (Class<?> cls : Generator.Category.SCROLL.classes){
-					Scroll scroll = (Scroll) Reflection.newInstance(cls);
-					if (!scroll.isKnown()) scroll.anonymize();
-					ArrayList<Item> in = new ArrayList<Item>(Arrays.asList(scroll));
-					result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
+					try{
+						Scroll scroll = (Scroll) cls.newInstance();
+						if (!scroll.isKnown()) scroll.anonymize();
+						ArrayList<Item> in = new ArrayList<Item>(Arrays.asList(scroll));
+						result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
+					} catch (Exception e){
+						ShatteredPixelDungeon.reportException(e);
+					}
 				}
 				return result;
 			case 2:
@@ -276,9 +280,8 @@ public class QuickRecipe extends Component {
 				result.add(new QuickRecipe( new Blandfruit.CookFruit(),
 						new ArrayList<>(Arrays.asList(new Blandfruit(), new Plant.Seed.PlaceHolder())),
 						new Blandfruit(){
-
-							public String name(){
-								return Messages.get(Blandfruit.class, "cooked");
+							{
+								name = Messages.get(Blandfruit.class, "cooked");
 							}
 							
 							@Override
@@ -291,30 +294,42 @@ public class QuickRecipe extends Component {
 				r = new Bomb.EnhanceBomb();
 				int i = 0;
 				for (Class<?> cls : Bomb.EnhanceBomb.validIngredients.keySet()){
-					if (i == 2){
-						result.add(null);
-						i = 0;
+					try{
+						if (i == 2){
+							result.add(null);
+							i = 0;
+						}
+						Item item = (Item) cls.newInstance();
+						ArrayList<Item> in = new ArrayList<Item>(Arrays.asList(new Bomb(), item));
+						result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
+						i++;
+					} catch (Exception e){
+						ShatteredPixelDungeon.reportException(e);
 					}
-					Item item = (Item) Reflection.newInstance(cls);
-					ArrayList<Item> in = new ArrayList<>(Arrays.asList(new Bomb(), item));
-					result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
-					i++;
 				}
 				return result;
 			case 4:
 				r = new ExoticPotion.PotionToExotic();
 				for (Class<?> cls : Generator.Category.POTION.classes){
-					Potion pot = (Potion) Reflection.newInstance(cls);
-					ArrayList<Item> in = new ArrayList<>(Arrays.asList(pot, new Plant.Seed.PlaceHolder().quantity(2)));
-					result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
+					try{
+						Potion pot = (Potion) cls.newInstance();
+						ArrayList<Item> in = new ArrayList<>(Arrays.asList(pot, new Plant.Seed.PlaceHolder().quantity(2)));
+						result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
+					} catch (Exception e){
+						ShatteredPixelDungeon.reportException(e);
+					}
 				}
 				return result;
 			case 5:
 				r = new ExoticScroll.ScrollToExotic();
 				for (Class<?> cls : Generator.Category.SCROLL.classes){
-					Scroll scroll = (Scroll) Reflection.newInstance(cls);
-					ArrayList<Item> in = new ArrayList<>(Arrays.asList(scroll, new Runestone.PlaceHolder().quantity(2)));
-					result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
+					try{
+						Scroll scroll = (Scroll) cls.newInstance();
+						ArrayList<Item> in = new ArrayList<>(Arrays.asList(scroll, new Runestone.PlaceHolder().quantity(2)));
+						result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
+					} catch (Exception e){
+						ShatteredPixelDungeon.reportException(e);
+					}
 				}
 				return result;
 			case 6:

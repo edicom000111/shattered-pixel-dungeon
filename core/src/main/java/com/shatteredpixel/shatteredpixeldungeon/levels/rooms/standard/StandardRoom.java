@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,12 +22,9 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
-import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
-import com.watabou.utils.Point;
 import com.watabou.utils.Random;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 
@@ -100,13 +97,19 @@ public abstract class StandardRoom extends Room {
 	@Override
 	public int minHeight() { return sizeCat.minDim; }
 	public int maxHeight() { return sizeCat.maxDim; }
-
+	
 	@Override
-	public boolean canMerge(Level l, Point p, int mergeTerrain) {
-		int cell = l.pointToCell(pointInside(p, 1));
-		return (Terrain.flags[l.map[cell]] & Terrain.SOLID) == 0;
+	public int minConnections(int direction) {
+		if (direction == ALL)   return 1;
+		else                    return 0;
 	}
-
+	
+	@Override
+	public int maxConnections(int direction) {
+		if (direction == ALL)   return 16;
+		else                    return 4;
+	}
+	
 	//FIXME this is a very messy way of handing variable standard rooms
 	private static ArrayList<Class<?extends StandardRoom>> rooms = new ArrayList<>();
 	static {
@@ -115,22 +118,17 @@ public abstract class StandardRoom extends Room {
 
 		rooms.add(SewerPipeRoom.class);
 		rooms.add(RingRoom.class);
-		rooms.add(CircleBasinRoom.class);
 
 		rooms.add(SegmentedRoom.class);
-		rooms.add(PillarsRoom.class);
-		rooms.add(CellBlockRoom.class);
+		rooms.add(StatuesRoom.class);
 
 		rooms.add(CaveRoom.class);
-		rooms.add(CavesFissureRoom.class);
 		rooms.add(CirclePitRoom.class);
 
 		rooms.add(HallwayRoom.class);
-		rooms.add(StatuesRoom.class);
-		rooms.add(SegmentedLibraryRoom.class);
+		rooms.add(PillarsRoom.class);
 
 		rooms.add(RuinsRoom.class);
-		rooms.add(ChasmRoom.class);
 		rooms.add(SkullsRoom.class);
 
 
@@ -148,27 +146,34 @@ public abstract class StandardRoom extends Room {
 	
 	private static float[][] chances = new float[27][];
 	static {
-		chances[1] =  new float[]{15,  10,10,5, 0,0,0, 0,0,0, 0,0,0, 0,0,0,  1,0,1,0,1,0,1,1,0,0};
-		chances[2] =  new float[]{15,  10,10,5, 0,0,0, 0,0,0, 0,0,0, 0,0,0,  1,1,1,1,1,1,1,1,1,1};
+		chances[1] =  new float[]{20,  15,5, 0,0, 0,0, 0,0, 0,0,    1,0,1,0,1,0,1,1,0,0};
+		chances[2] =  new float[]{20,  15,5, 0,0, 0,0, 0,0, 0,0,    1,1,1,1,1,1,1,1,1,1};
 		chances[4] =  chances[3] = chances[2];
-		chances[5] =  new float[]{15,  10,10,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0,  0,0,0,0,0,0,0,0,0,0};
-
-		chances[6] =  new float[]{15,  0,0,0, 10,10,5, 0,0,0, 0,0,0, 0,0,0,  1,1,1,1,1,1,1,1,1,1};
+		chances[5] =  new float[]{50,  0,0, 0,0, 0,0, 0,0, 0,0,     0,0,0,0,0,0,0,0,0,0};
+		
+		chances[6] =  new float[]{20,  0,0, 15,5, 0,0, 0,0, 0,0,    1,1,1,1,1,1,1,1,1,1};
 		chances[10] = chances[9] = chances[8] = chances[7] = chances[6];
-
-		chances[11] = new float[]{20,  0,0,0, 0,0,0, 10,10,5, 0,0,0, 0,0,0,  1,1,1,1,1,1,1,1,1,1};
+		
+		chances[11] = new float[]{20,  0,0, 0,0, 15,5, 0,0, 0,0,    1,1,1,1,1,1,1,1,1,1};
 		chances[15] = chances[14] = chances[13] = chances[12] = chances[11];
 
-		chances[16] = new float[]{15,  0,0,0, 0,0,0, 0,0,0, 10,10,5, 0,0,0,  1,1,1,1,1,1,1,1,1,1};
+		chances[16] = new float[]{20,  0,0, 0,0, 0,0, 15,5, 0,0,    1,1,1,1,1,1,1,1,1,1};
 		chances[20] = chances[19] = chances[18] = chances[17] = chances[16];
-
-		chances[21] = new float[]{15,  0,0,0, 0,0,0, 0,0,0, 0,0,0, 10,10,5,  1,1,1,1,1,1,1,1,1,1};
-		chances[26] = chances[25] = chances[24] = chances[23] = chances[22] = chances[21];
+		
+		chances[21] = chances[5];
+		
+		chances[22] = new float[]{20,  0,0, 0,0, 0,0, 0,0, 15,5,    1,1,1,1,1,1,1,1,1,1};
+		chances[26] = chances[25] = chances[24] = chances[23] = chances[22];
 	}
 	
 	
 	public static StandardRoom createRoom(){
-		return Reflection.newInstance(rooms.get(Random.chances(chances[Dungeon.depth])));
+		try{
+			return rooms.get(Random.chances(chances[Dungeon.depth])).newInstance();
+		} catch (Exception e) {
+			ShatteredPixelDungeon.reportException(e);
+			return null;
+		}
 	}
 	
 }

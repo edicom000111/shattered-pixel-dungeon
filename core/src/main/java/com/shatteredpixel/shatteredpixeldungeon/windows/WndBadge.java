@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BadgeBanner;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.noosa.Image;
 
@@ -33,20 +33,18 @@ public class WndBadge extends Window {
 	private static final int WIDTH = 120;
 	private static final int MARGIN = 4;
 	
-	public WndBadge( Badges.Badge badge, boolean unlocked ) {
+	public WndBadge( Badges.Badge badge ) {
 		
 		super();
 		
 		Image icon = BadgeBanner.image( badge.image );
 		icon.scale.set( 2 );
-		if (!unlocked) icon.brightness(0.4f);
 		add( icon );
 
-		RenderedTextBlock info = PixelScene.renderTextBlock( badge.desc(), 8 );
+		//TODO: this used to be centered, should probably figure that out.
+		RenderedTextMultiline info = PixelScene.renderMultiline( badge.desc(), 8 );
 		info.maxWidth(WIDTH - MARGIN * 2);
-		info.align(RenderedTextBlock.CENTER_ALIGN);
 		PixelScene.align(info);
-		if (!unlocked) info.hardlight( 0x888888 );
 		add(info);
 		
 		float w = Math.max( icon.width(), info.width() ) + MARGIN * 2;
@@ -58,6 +56,6 @@ public class WndBadge extends Window {
 		info.setPos((w - info.width()) / 2, icon.y + icon.height() + MARGIN);
 		resize( (int)w, (int)(info.bottom() + MARGIN) );
 		
-		if (unlocked) BadgeBanner.highlight( icon, badge.image );
+		BadgeBanner.highlight( icon, badge.image );
 	}
 }

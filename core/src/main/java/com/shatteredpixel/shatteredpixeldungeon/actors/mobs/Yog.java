@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,9 +49,10 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GrimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.BurningFistSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.FistSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.LarvaSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.RottingFistSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.YogSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -181,6 +182,7 @@ public class Yog extends Mob {
 			yell(Messages.get(this, "notice"));
 			for (Char ch : Actor.chars()){
 				if (ch instanceof DriedRose.GhostHero){
+					GLog.n("\n");
 					((DriedRose.GhostHero) ch).sayBoss();
 				}
 			}
@@ -212,7 +214,7 @@ public class Yog extends Mob {
 		private static final int REGENERATION	= 4;
 		
 		{
-			spriteClass = FistSprite.Rotting.class;
+			spriteClass = RottingFistSprite.class;
 			
 			HP = HT = 300;
 			defenseSkill = 25;
@@ -221,7 +223,7 @@ public class Yog extends Mob {
 			
 			state = WANDERING;
 
-			properties.add(Property.MINIBOSS);
+			properties.add(Property.BOSS);
 			properties.add(Property.DEMONIC);
 			properties.add(Property.ACIDIC);
 		}
@@ -246,7 +248,7 @@ public class Yog extends Mob {
 			damage = super.attackProc( enemy, damage );
 			
 			if (Random.Int( 3 ) == 0) {
-				Buff.affect( enemy, Ooze.class ).set( Ooze.DURATION );
+				Buff.affect( enemy, Ooze.class ).set( 20f );
 				enemy.sprite.burst( 0xFF000000, 5 );
 			}
 			
@@ -284,7 +286,7 @@ public class Yog extends Mob {
 	public static class BurningFist extends Mob {
 		
 		{
-			spriteClass = FistSprite.Burning.class;
+			spriteClass = BurningFistSprite.class;
 			
 			HP = HT = 200;
 			defenseSkill = 25;
@@ -293,7 +295,7 @@ public class Yog extends Mob {
 			
 			state = WANDERING;
 
-			properties.add(Property.MINIBOSS);
+			properties.add(Property.BOSS);
 			properties.add(Property.DEMONIC);
 			properties.add(Property.FIERY);
 		}
@@ -320,49 +322,37 @@ public class Yog extends Mob {
 		
 		//used so resistances can differentiate between melee and magical attacks
 		public static class DarkBolt{}
-
-		protected boolean doAttack( Char enemy ) {
-
-			if (Dungeon.level.adjacent( pos, enemy.pos )) {
-
-				return super.doAttack( enemy );
-
-			} else {
-
-				if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-					sprite.zap( enemy.pos );
-					return false;
-				} else {
-					zap();
+		
+		@Override
+		public boolean attack( Char enemy ) {
+			
+			if (!Dungeon.level.adjacent( pos, enemy.pos )) {
+				spend( attackDelay() );
+				
+				if (hit( this, enemy, true )) {
+					
+					int dmg =  damageRoll();
+					enemy.damage( dmg, new DarkBolt() );
+					
+					enemy.sprite.bloodBurstA( sprite.center(), dmg );
+					enemy.sprite.flash();
+					
+					if (!enemy.isAlive() && enemy == Dungeon.hero) {
+						Dungeon.fail( getClass() );
+						GLog.n( Messages.get(Char.class, "kill", name) );
+					}
 					return true;
+					
+				} else {
+					
+					enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+					return false;
 				}
-			}
-		}
-
-		private void zap() {
-			spend( 1f );
-
-			if (hit( this, enemy, true )) {
-
-				int dmg = damageRoll();
-				enemy.damage( dmg, new DarkBolt() );
-
-				if (!enemy.isAlive() && enemy == Dungeon.hero) {
-					Dungeon.fail( getClass() );
-					GLog.n( Messages.get(Char.class, "kill", name()) );
-				}
-
 			} else {
-
-				enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+				return super.attack( enemy );
 			}
 		}
-
-		public void onZapComplete() {
-			zap();
-			next();
-		}
-
+		
 		@Override
 		public boolean act() {
 			

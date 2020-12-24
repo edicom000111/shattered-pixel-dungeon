@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@ package com.shatteredpixel.shatteredpixeldungeon.levels;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Bones;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
-import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -50,12 +49,12 @@ public class LastShopLevel extends RegularLevel {
 	
 	@Override
 	public String tilesTex() {
-		return Assets.Environment.TILES_CITY;
+		return Assets.TILES_CITY;
 	}
 	
 	@Override
 	public String waterTex() {
-		return Assets.Environment.WATER_CITY;
+		return Assets.WATER_CITY;
 	}
 	
 	@Override
@@ -110,7 +109,7 @@ public class LastShopLevel extends RegularLevel {
 	protected void createMobs() {
 	}
 	
-	public Actor addRespawner() {
+	public Actor respawner() {
 		return null;
 	}
 	
@@ -122,19 +121,13 @@ public class LastShopLevel extends RegularLevel {
 			do {
 				pos = pointToCell(roomEntrance.random());
 			} while (pos == entrance);
-			drop( item, pos ).setHauntedIfCursed().type = Heap.Type.REMAINS;
+			drop( item, pos ).setHauntedIfCursed(1f).type = Heap.Type.REMAINS;
 		}
 	}
 	
 	@Override
-	public int randomRespawnCell( Char ch ) {
-		int cell;
-		do {
-			cell = pointToCell( roomEntrance.random() );
-		} while (!passable[cell]
-				|| (Char.hasProp(ch, Char.Property.LARGE) && !openSpace[cell])
-				|| Actor.findChar(cell) != null);
-		return cell;
+	public int randomRespawnCell() {
+		return pointToCell( roomEntrance.random() );
 	}
 	
 	@Override

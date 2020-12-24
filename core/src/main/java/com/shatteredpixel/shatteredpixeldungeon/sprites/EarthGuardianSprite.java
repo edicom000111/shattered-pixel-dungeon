@@ -8,7 +8,7 @@ public class EarthGuardianSprite extends MobSprite {
 	public EarthGuardianSprite() {
 		super();
 
-		texture( Assets.Sprites.GUARDIAN );
+		texture( Assets.GUARDIAN );
 
 		TextureFilm frames = new TextureFilm( texture, 12, 15 );
 
@@ -29,7 +29,7 @@ public class EarthGuardianSprite extends MobSprite {
 
 	@Override
 	public int blood() {
-		return 0xFF966400;
+		return 0xFFcdcdb7;
 	}
 
 }

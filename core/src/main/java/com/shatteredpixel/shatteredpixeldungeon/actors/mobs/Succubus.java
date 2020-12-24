@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,26 +29,23 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barrier;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Light;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Sleep;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
-import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
-import com.shatteredpixel.shatteredpixeldungeon.items.Item;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfIdentify;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfLullaby;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.SuccubusSprite;
 import com.watabou.noosa.audio.Sample;
-import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 
 public class Succubus extends Mob {
-
-	private int blinkCooldown = 0;
+	
+	private static final int BLINK_DELAY	= 5;
+	
+	private int delay = 0;
 	
 	{
 		spriteClass = SuccubusSprite.class;
@@ -60,8 +57,8 @@ public class Succubus extends Mob {
 		EXP = 12;
 		maxLvl = 25;
 		
-		loot = Generator.Category.SCROLL;
-		lootChance = 0.33f;
+		loot = new ScrollOfLullaby();
+		lootChance = 0.05f;
 
 		properties.add(Property.DEMONIC);
 	}
@@ -84,13 +81,12 @@ public class Succubus extends Mob {
 				HP += 5 + damage;
 			}
 			sprite.emitter().burst( Speck.factory( Speck.HEALING ), 2 );
-			Sample.INSTANCE.play( Assets.Sounds.CHARMS );
+			Sample.INSTANCE.play( Assets.SND_CHARMS );
 		} else if (Random.Int( 3 ) == 0) {
-			Charm c = Buff.affect( enemy, Charm.class, Charm.DURATION/2f );
-			c.object = id();
-			c.ignoreNextHit = true; //so that the -5 duration from succubus hit is ignored
+			//attack will reduce by 5 turns, so effectively 3-4 turns
+			Buff.affect( enemy, Charm.class, Random.IntRange( 3, 4 ) + 5 ).object = id();
 			enemy.sprite.centerEmitter().start( Speck.factory( Speck.HEART ), 0.2f, 5 );
-			Sample.INSTANCE.play( Assets.Sounds.CHARMS );
+			Sample.INSTANCE.play( Assets.SND_CHARMS );
 		}
 		
 		return damage;
@@ -98,15 +94,15 @@ public class Succubus extends Mob {
 	
 	@Override
 	protected boolean getCloser( int target ) {
-		if (fieldOfView[target] && Dungeon.level.distance( pos, target ) > 2 && blinkCooldown <= 0) {
+		if (fieldOfView[target] && Dungeon.level.distance( pos, target ) > 2 && delay <= 0) {
 			
 			blink( target );
 			spend( -1 / speed() );
 			return true;
 			
 		} else {
-
-			blinkCooldown--;
+			
+			delay--;
 			return super.getCloser( target );
 			
 		}
@@ -132,14 +128,14 @@ public class Succubus extends Mob {
 			if (candidates.size() > 0)
 				cell = Random.element(candidates);
 			else {
-				blinkCooldown = Random.IntRange(4, 6);
+				delay = BLINK_DELAY;
 				return;
 			}
 		}
 		
 		ScrollOfTeleportation.appear( this, cell );
-
-		blinkCooldown = Random.IntRange(4, 6);
+		
+		delay = BLINK_DELAY;
 	}
 	
 	@Override
@@ -151,32 +147,9 @@ public class Succubus extends Mob {
 	public int drRoll() {
 		return Random.NormalIntRange(0, 10);
 	}
-
-	@Override
-	protected Item createLoot() {
-		Class<?extends Scroll> loot;
-		do{
-			loot = (Class<? extends Scroll>) Random.oneOf(Generator.Category.SCROLL.classes);
-		} while (loot == ScrollOfIdentify.class || loot == ScrollOfUpgrade.class);
-
-		return Reflection.newInstance(loot);
-	}
-
+	
 	{
+		immunities.add( Sleep.class );
 		immunities.add( Charm.class );
-	}
-
-	private static final String BLINK_CD = "blink_cd";
-
-	@Override
-	public void storeInBundle(Bundle bundle) {
-		super.storeInBundle(bundle);
-		bundle.put(BLINK_CD, blinkCooldown);
-	}
-
-	@Override
-	public void restoreFromBundle(Bundle bundle) {
-		super.restoreFromBundle(bundle);
-		blinkCooldown = bundle.getInt(BLINK_CD);
 	}
 }

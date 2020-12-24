@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,24 +25,25 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Drowsy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 
 public class ScrollOfLullaby extends Scroll {
 
 	{
-		icon = ItemSpriteSheet.Icons.SCROLL_LULLABY;
+		initials = 1;
 	}
 
 	@Override
 	public void doRead() {
 		
 		curUser.sprite.centerEmitter().start( Speck.factory( Speck.NOTE ), 0.3f, 5 );
-		Sample.INSTANCE.play( Assets.Sounds.LULLABY );
+		Sample.INSTANCE.play( Assets.SND_LULLABY );
+		Invisibility.dispel();
 
 		for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
 			if (Dungeon.level.heroFOV[mob.pos]) {
@@ -55,12 +56,24 @@ public class ScrollOfLullaby extends Scroll {
 
 		GLog.i( Messages.get(this, "sooth") );
 
-		identify();
+		setKnown();
+
 		readAnimation();
 	}
 	
 	@Override
-	public int value() {
-		return isKnown() ? 40 * quantity : super.value();
+	public void empoweredRead() {
+		doRead();
+		for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
+			if (Dungeon.level.heroFOV[mob.pos]) {
+				Buff drowsy = mob.buff(Drowsy.class);
+				if (drowsy != null) drowsy.act();
+			}
+		}
+	}
+	
+	@Override
+	public int price() {
+		return isKnown() ? 40 * quantity : super.price();
 	}
 }

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,14 +23,14 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
-import com.watabou.input.PointerEvent;
+import com.watabou.input.Touchscreen.Touch;
 import com.watabou.noosa.Game;
-import com.watabou.noosa.Image;
-import com.watabou.noosa.PointerArea;
+import com.watabou.noosa.TouchArea;
 import com.watabou.utils.SparseArray;
 
 public class WndStory extends Window {
@@ -49,7 +49,7 @@ public class WndStory extends Window {
 	public static final int ID_CITY     	= 3;
 	public static final int ID_HALLS		= 4;
 	
-	private static final SparseArray<String> CHAPTERS = new SparseArray<>();
+	private static final SparseArray<String> CHAPTERS = new SparseArray<String>();
 	
 	static {
 		CHAPTERS.put( ID_SEWERS, "sewers" );
@@ -57,45 +57,31 @@ public class WndStory extends Window {
 		CHAPTERS.put( ID_CAVES, "caves" );
 		CHAPTERS.put( ID_CITY, "city" );
 		CHAPTERS.put( ID_HALLS, "halls" );
-	}
-
-	private IconTitle ttl;
-	private RenderedTextBlock tf;
+	};
+	
+	private RenderedTextMultiline tf;
 	
 	private float delay;
-
-	public WndStory( String text ) {
-		this( null, null, text );
-	}
 	
-	public WndStory(Image icon, String title, String text ) {
+	public WndStory( String text ) {
 		super( 0, 0, Chrome.get( Chrome.Type.SCROLL ) );
-
-		int width = PixelScene.landscape() ? WIDTH_L - MARGIN * 2: WIDTH_P - MARGIN *2;
-
-		float y = MARGIN;
-		if (icon != null && title != null){
-			ttl = new IconTitle(icon, title);
-			ttl.setRect(MARGIN, y, width-2*MARGIN, 0);
-			y = ttl.bottom()+MARGIN;
-			add(ttl);
-			ttl.tfLabel.invert();
-		}
 		
-		tf = PixelScene.renderTextBlock( text, 6 );
-		tf.maxWidth(width);
+		tf = PixelScene.renderMultiline( text, 6 );
+		tf.maxWidth(SPDSettings.landscape() ?
+					WIDTH_L - MARGIN * 2:
+					WIDTH_P - MARGIN *2);
 		tf.invert();
-		tf.setPos(MARGIN, y);
+		tf.setPos(MARGIN, 0);
 		add( tf );
 		
-		add( new PointerArea( chrome ) {
+		add( new TouchArea( chrome ) {
 			@Override
-			protected void onClick( PointerEvent event ) {
+			protected void onClick( Touch touch ) {
 				hide();
 			}
 		} );
 		
-		resize( (int)(tf.width() + MARGIN * 2), (int)Math.min( tf.bottom()+MARGIN, 180 ) );
+		resize( (int)(tf.width() + MARGIN * 2), (int)Math.min( tf.height(), 180 ) );
 	}
 	
 	@Override
@@ -104,7 +90,6 @@ public class WndStory extends Window {
 		
 		if (delay > 0 && (delay -= Game.elapsed) <= 0) {
 			shadow.visible = chrome.visible = tf.visible = true;
-			if (ttl != null) ttl.visible = true;
 		}
 	}
 	
@@ -119,7 +104,6 @@ public class WndStory extends Window {
 			WndStory wnd = new WndStory( text );
 			if ((wnd.delay = 0.6f) > 0) {
 				wnd.shadow.visible = wnd.chrome.visible = wnd.tf.visible = false;
-				if (wnd.ttl != null) wnd.ttl.visible = false;
 			}
 			
 			Game.scene().add( wnd );

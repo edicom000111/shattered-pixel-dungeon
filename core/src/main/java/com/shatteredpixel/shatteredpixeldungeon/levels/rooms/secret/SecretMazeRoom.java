@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,11 +58,12 @@ public class SecretMazeRoom extends SecretRoom {
 	
 	@Override
 	public void paint(Level level) {
+		super.paint(level);
+		
 		Painter.fill(level, this, Terrain.WALL);
 		Painter.fill(level, this, 1, Terrain.EMPTY);
 		
 		//true = space, false = wall
-		Maze.allowDiagonals = false;
 		boolean[][] maze = Maze.generate(this);
 		boolean[] passable = new boolean[width()*height()];
 		
@@ -102,7 +103,6 @@ public class SecretMazeRoom extends SecretRoom {
 				prize = Generator.randomArmor((Dungeon.depth / 5) + 1);
 			}
 		} while (prize.cursed || Challenges.isItemBlocked(prize));
-		prize.cursedKnown = true;
 		
 		//33% chance for an extra update.
 		if (Random.Int(3) == 0){

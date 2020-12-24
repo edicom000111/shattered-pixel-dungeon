@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,19 +21,23 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
-import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.watabou.noosa.Game;
 
 public class DiscardedItemSprite extends ItemSprite {
+	
+	public DiscardedItemSprite() {
+		
+		super();
+		
+		originToCenter();
+		angularSpeed = 720;
+	}
 	
 	@Override
 	public void drop() {
 		scale.set( 1 );
 		am = 1;
 		if (emitter != null) emitter.killAndErase();
-
-		origin.set( width/2, height - DungeonTilemap.SIZE/2);
-		angularSpeed = 720;
 	}
 	
 	@Override
@@ -41,8 +45,7 @@ public class DiscardedItemSprite extends ItemSprite {
 		
 		super.update();
 		
-		scale.set( scale.x -= Game.elapsed );
-		y += 12 * Game.elapsed;
+		scale.set( scale.x * 0.9f );
 		if ((am -= Game.elapsed) <= 0) {
 			remove();
 		}

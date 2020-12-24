@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ItemSlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.audio.Sample;
@@ -56,11 +56,11 @@ public class WndBlacksmith extends Window {
 		
 		IconTitle titlebar = new IconTitle();
 		titlebar.icon( troll.sprite() );
-		titlebar.label( Messages.titleCase( troll.name() ) );
+		titlebar.label( Messages.titleCase( troll.name ) );
 		titlebar.setRect( 0, 0, WIDTH, 0 );
 		add( titlebar );
 		
-		RenderedTextBlock message = PixelScene.renderTextBlock( Messages.get(this, "prompt"), 6 );
+		RenderedTextMultiline message = PixelScene.renderMultiline( Messages.get(this, "prompt"), 6 );
 		message.maxWidth( WIDTH);
 		message.setPos(0, titlebar.bottom() + GAP);
 		add( message );
@@ -103,7 +103,7 @@ public class WndBlacksmith extends Window {
 	protected WndBag.Listener itemSelector = new WndBag.Listener() {
 		@Override
 		public void onSelect( Item item ) {
-			if (item != null && btnPressed.parent != null) {
+			if (item != null) {
 				btnPressed.item( item );
 				
 				if (btnItem1.item != null && btnItem2.item != null) {
@@ -135,12 +135,12 @@ public class WndBlacksmith extends Window {
 			
 			slot = new ItemSlot() {
 				@Override
-				protected void onPointerDown() {
+				protected void onTouchDown() {
 					bg.brightness( 1.2f );
-					Sample.INSTANCE.play( Assets.Sounds.CLICK );
-				}
+					Sample.INSTANCE.play( Assets.SND_CLICK );
+				};
 				@Override
-				protected void onPointerUp() {
+				protected void onTouchUp() {
 					bg.resetColor();
 				}
 				@Override
@@ -152,7 +152,7 @@ public class WndBlacksmith extends Window {
 			add( slot );
 		}
 		
-		protected void onClick() {}
+		protected void onClick() {};
 		
 		@Override
 		protected void layout() {
@@ -163,7 +163,7 @@ public class WndBlacksmith extends Window {
 			bg.size( width, height );
 			
 			slot.setRect( x + 2, y + 2, width - 4, height - 4 );
-		}
+		};
 		
 		public void item( Item item ) {
 			slot.item( this.item = item );

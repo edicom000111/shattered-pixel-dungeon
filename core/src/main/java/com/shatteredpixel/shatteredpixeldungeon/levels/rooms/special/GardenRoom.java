@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special;
 
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Foliage;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
@@ -39,14 +41,20 @@ public class GardenRoom extends SpecialRoom {
 		
 		entrance().set( Door.Type.REGULAR );
 
-		int bushes = Random.Int(3);
-		if (bushes == 0) {
-			level.plant(new Sungrass.Seed(), plantPos( level ));
-		} else if (bushes == 1) {
-			level.plant(new BlandfruitBush.Seed(), plantPos( level ));
-		} else if (Random.Int(5) == 0) {
-			level.plant(new Sungrass.Seed(), plantPos( level ));
-			level.plant(new BlandfruitBush.Seed(), plantPos( level ));
+		if (Dungeon.isChallenged(Challenges.NO_FOOD)) {
+			if (Random.Int(2) == 0){
+				level.plant(new Sungrass.Seed(), plantPos( level ));
+			}
+		} else {
+			int bushes = Random.Int(3);
+			if (bushes == 0) {
+				level.plant(new Sungrass.Seed(), plantPos( level ));
+			} else if (bushes == 1) {
+				level.plant(new BlandfruitBush.Seed(), plantPos( level ));
+			} else if (Random.Int(5) == 0) {
+				level.plant(new Sungrass.Seed(), plantPos( level ));
+				level.plant(new BlandfruitBush.Seed(), plantPos( level ));
+			}
 		}
 		
 		Foliage light = (Foliage)level.blobs.get( Foliage.class );

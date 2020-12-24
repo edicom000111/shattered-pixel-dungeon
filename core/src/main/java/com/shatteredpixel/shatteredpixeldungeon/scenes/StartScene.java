@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.scenes;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
@@ -31,13 +32,14 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Archs;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndGameInProgress;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndStartGame;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.NinePatch;
+import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.ui.Button;
 
 import java.util.ArrayList;
@@ -67,23 +69,21 @@ public class StartScene extends PixelScene {
 		btnExit.setPos( w - btnExit.width(), 0 );
 		add( btnExit );
 		
-		RenderedTextBlock title = PixelScene.renderTextBlock( Messages.get(this, "title"), 9);
+		RenderedText title = PixelScene.renderText( Messages.get(this, "title"), 9);
 		title.hardlight(Window.TITLE_COLOR);
-		title.setPos(
-				(w - title.width()) / 2f,
-				(20 - title.height()) / 2f
-		);
+		title.x = (w - title.width()) / 2f;
+		title.y = (20 - title.baseLine()) / 2f;
 		align(title);
 		add(title);
 		
 		ArrayList<GamesInProgress.Info> games = GamesInProgress.checkAll();
 		
-		int slotGap = landscape() ? 5 : 10;
+		int slotGap = SPDSettings.landscape() ? 5 : 10;
 		int slotCount = Math.min(GamesInProgress.MAX_SLOTS, games.size()+1);
 		int slotsHeight = slotCount*SLOT_HEIGHT + (slotCount-1)* slotGap;
 		
 		float yPos = (h - slotsHeight)/2f;
-		if (landscape()) yPos += 8;
+		if (SPDSettings.landscape()) yPos += 8;
 		
 		for (GamesInProgress.Info game : games) {
 			SaveSlotButton existingGame = new SaveSlotButton();
@@ -120,7 +120,7 @@ public class StartScene extends PixelScene {
 		private NinePatch bg;
 		
 		private Image hero;
-		private RenderedTextBlock name;
+		private RenderedText name;
 		
 		private Image steps;
 		private BitmapText depth;
@@ -137,7 +137,7 @@ public class StartScene extends PixelScene {
 			bg = Chrome.get(Chrome.Type.GEM);
 			add( bg);
 			
-			name = PixelScene.renderTextBlock(9);
+			name = PixelScene.renderText(9);
 			add(name);
 		}
 		
@@ -221,33 +221,27 @@ public class StartScene extends PixelScene {
 				hero.y = y + (height - hero.height())/2f;
 				align(hero);
 				
-				name.setPos(
-						hero.x + hero.width() + 6,
-						y + (height - name.height())/2f
-				);
+				name.x = hero.x + hero.width() + 6;
+				name.y = y + (height - name.baseLine())/2f;
 				align(name);
 				
-				classIcon.x = x + width - 24 + (16 - classIcon.width())/2f;
+				classIcon.x = x + width - classIcon.width() - 8;
 				classIcon.y = y + (height - classIcon.height())/2f;
-				align(classIcon);
 				
 				level.x = classIcon.x + (classIcon.width() - level.width()) / 2f;
 				level.y = classIcon.y + (classIcon.height() - level.height()) / 2f + 1;
 				align(level);
 				
-				steps.x = x + width - 40 + (16 - steps.width())/2f;
+				steps.x = classIcon.x - steps.width();
 				steps.y = y + (height - steps.height())/2f;
-				align(steps);
 				
 				depth.x = steps.x + (steps.width() - depth.width()) / 2f;
 				depth.y = steps.y + (steps.height() - depth.height()) / 2f + 1;
 				align(depth);
 				
 			} else {
-				name.setPos(
-						x + (width - name.width())/2f,
-						y + (height - name.height())/2f
-				);
+				name.x = x + (width - name.width())/2f;
+				name.y = y + (height - name.baseLine())/2f;
 				align(name);
 			}
 			
@@ -257,9 +251,7 @@ public class StartScene extends PixelScene {
 		@Override
 		protected void onClick() {
 			if (newGame) {
-				GamesInProgress.selectedClass = null;
-				GamesInProgress.curSlot = slot;
-				ShatteredPixelDungeon.switchScene(HeroSelectScene.class);
+				ShatteredPixelDungeon.scene().add( new WndStartGame(slot));
 			} else {
 				ShatteredPixelDungeon.scene().add( new WndGameInProgress(slot));
 			}

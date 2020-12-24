@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.noosa.Image;
@@ -39,11 +38,6 @@ public class Shadows extends Invisibility {
 
 	{
 		announced = false;
-	}
-
-	@Override
-	public void tintIcon(Image icon) {
-		icon.hardlight(1f, 1f, 0.3f);
 	}
 	
 	@Override
@@ -61,18 +55,10 @@ public class Shadows extends Invisibility {
 	
 	@Override
 	public boolean attachTo( Char target ) {
-		if (Dungeon.level != null) {
-			for (Mob m : Dungeon.level.mobs) {
-				if (Dungeon.level.adjacent(m.pos, target.pos) && m.alignment != target.alignment) {
-					return false;
-				}
-			}
-		}
 		if (super.attachTo( target )) {
-			if (Dungeon.level != null) {
-				Sample.INSTANCE.play( Assets.Sounds.MELD );
+			Sample.INSTANCE.play( Assets.SND_MELD );
+			if (Dungeon.level != null)
 				Dungeon.observe();
-			}
 			return true;
 		} else {
 			return false;
@@ -89,16 +75,10 @@ public class Shadows extends Invisibility {
 	public boolean act() {
 		if (target.isAlive()) {
 			
-			spend( TICK );
+			spend( TICK * 2 );
 			
-			if (--left <= 0) {
+			if (--left <= 0 || Dungeon.hero.visibleEnemies() > 0) {
 				detach();
-			}
-
-			for (Mob m : Dungeon.level.mobs){
-				if (Dungeon.level.adjacent(m.pos, target.pos) && m.alignment != target.alignment){
-					detach();
-				}
 			}
 			
 		} else {
@@ -118,10 +98,10 @@ public class Shadows extends Invisibility {
 	public int icon() {
 		return BuffIndicator.SHADOWS;
 	}
-
+	
 	@Override
-	public float iconFadePercent() {
-		return 0;
+	public void tintIcon(Image icon) {
+		icon.resetColor();
 	}
 	
 	@Override

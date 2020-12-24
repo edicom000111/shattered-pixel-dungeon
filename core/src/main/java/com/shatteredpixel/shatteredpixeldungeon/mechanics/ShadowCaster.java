@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,10 +47,6 @@ public final class ShadowCaster {
 	}
 	
 	public static void castShadow( int x, int y, boolean[] fieldOfView, boolean[] blocking, int distance ) {
-		
-		if (distance >= MAX_DISTANCE){
-			distance = MAX_DISTANCE;
-		}
 
 		BArray.setFalse(fieldOfView);
 
@@ -74,11 +70,16 @@ public final class ShadowCaster {
 
 	}
 	
+	//TODO this is slightly less permissive that the previous algorithm, decide if that's okay
+	
 	//scans a single 45 degree octant of the FOV.
 	//This can add up to a whole FOV by mirroring in X(mX), Y(mY), and X=Y(mXY)
 	private static void scanOctant(int distance, boolean[] fov, boolean[] blocking, int row,
 	                               int x, int y, double lSlope, double rSlope,
 	                               int mX, int mY, boolean mXY){
+		
+		//if we have negative space to traverse, just quit.
+		if (rSlope < lSlope) return;
 		
 		boolean inBlocking = false;
 		int start, end;
@@ -88,9 +89,6 @@ public final class ShadowCaster {
 		
 		//for each row, starting with the current one
 		for (; row <= distance; row++){
-
-			//if we have negative space to traverse, just quit.
-			if (rSlope < lSlope) return;
 			
 			//we offset by slightly less than 0.5 to account for slopes just touching a cell
 			if (lSlope == 0)    start = 0;
@@ -109,13 +107,6 @@ public final class ShadowCaster {
 			
 			//for each column in this row, which
 			for (col = start; col <= end; col++){
-
-
-				//handles the error case of the slope value at the end of a cell being 1 farther
-				// along then at the beginning of the cell, and that earlier cell is vision blocking
-				if (col == end && inBlocking && (int)Math.ceil((row - 0.5) * rSlope - 0.499) != end){
-					break;
-				}
 				
 				fov[cell] = true;
 				

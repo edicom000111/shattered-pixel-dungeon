@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,12 +35,11 @@ public class RatKingSprite extends MobSprite {
 
 		final Calendar calendar = Calendar.getInstance();
 		//once a year the rat king feels a bit festive!
-		festive = (calendar.get(Calendar.MONTH) == Calendar.DECEMBER
-				&& calendar.get(Calendar.WEEK_OF_MONTH) > 2);
+		festive = (calendar.get(Calendar.MONTH) == 11 && calendar.get(Calendar.WEEK_OF_MONTH) > 2);
 
 		final int c = festive ? 8 : 0;
 		
-		texture( Assets.Sprites.RATKING );
+		texture( Assets.RATKING );
 		
 		TextureFilm frames = new TextureFilm( texture, 16, 17 );
 		

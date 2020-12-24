@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,10 @@
 
 package com.watabou.noosa;
 
-import com.badlogic.gdx.graphics.Pixmap;
+import android.graphics.Bitmap;
+
 import com.watabou.gltextures.SmartTexture;
+import com.watabou.gltextures.TextureCache;
 import com.watabou.glwrap.Matrix;
 import com.watabou.glwrap.Quad;
 import com.watabou.glwrap.Vertexbuffer;
@@ -209,10 +211,8 @@ public class BitmapText extends Visual {
 	}
 
 	public synchronized void text( String str ) {
-		if (str == null || !str.equals(text)) {
-			text = str;
-			dirty = true;
-		}
+		text = str;
+		dirty = true;
 	}
 	
 	public static class Font extends TextureFilm {
@@ -264,8 +264,8 @@ public class BitmapText extends Visual {
 			lineHeight = baseLine = height;
 		}
 
-		protected void splitBy( Pixmap bitmap, int height, int color, String chars ) {
-			
+		protected void splitBy( Bitmap bitmap, int height, int color, String chars ) {
+
 			int length = chars.length();
 			
 			int width = bitmap.getWidth();
@@ -302,7 +302,7 @@ public class BitmapText extends Visual {
 						}
 						found = false;
 						for (int j=line; j < line + height; j++) {
-							if (colorNotMatch( bitmap, separator, j, color)) {
+							if (bitmap.getPixel( separator, j ) != color) {
 								found = true;
 								break;
 							}
@@ -320,7 +320,7 @@ public class BitmapText extends Visual {
 						}
 						found = true;
 						for (int j=line; j < line + height; j++) {
-							if (colorNotMatch( bitmap, separator, j, color)) {
+							if (bitmap.getPixel( separator, j ) != color) {
 								found = false;
 								break;
 							}
@@ -335,23 +335,15 @@ public class BitmapText extends Visual {
 			lineHeight = baseLine = height( frames.get( chars.charAt( 0 ) ) );
 		}
 		
-		private boolean colorNotMatch(Pixmap pixmap, int x, int y, int color) {
-			int pixel = pixmap.getPixel(x, y);
-			if ((pixel & 0xFF) == 0) {
-				return color != 0;
-			}
-			return pixel != color;
-		}
-		
-		public static Font colorMarked( SmartTexture tex, int color, String chars ) {
-			Font font = new Font( tex );
-			font.splitBy( tex.bitmap, tex.height, color, chars );
+		public static Font colorMarked( Bitmap bmp, int color, String chars ) {
+			Font font = new Font( TextureCache.get( bmp ) );
+			font.splitBy( bmp, bmp.getHeight(), color, chars );
 			return font;
 		}
 		 
-		public static Font colorMarked( SmartTexture tex, int height, int color, String chars ) {
-			Font font = new Font( tex );
-			font.splitBy( tex.bitmap, height, color, chars );
+		public static Font colorMarked( Bitmap bmp, int height, int color, String chars ) {
+			Font font = new Font( TextureCache.get( bmp ) );
+			font.splitBy( bmp, height, color, chars );
 			return font;
 		}
 		

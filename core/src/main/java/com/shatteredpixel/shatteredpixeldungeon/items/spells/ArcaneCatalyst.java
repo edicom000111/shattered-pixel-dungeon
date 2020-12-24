@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
@@ -40,7 +41,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.utils.Random;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,14 +72,18 @@ public class ArcaneCatalyst extends Spell {
 		detach( curUser.belongings.backpack );
 		updateQuickslot();
 		
-		Scroll s = Reflection.newInstance(Random.chances(scrollChances));
-		s.anonymize();
-		curItem = s;
-		s.doRead();
+		try {
+			Scroll s = Random.chances(scrollChances).newInstance();
+			s.anonymize();
+			curItem = s;
+			s.doRead();
+		} catch (Exception e) {
+			ShatteredPixelDungeon.reportException(e);
+		}
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		return 40 * quantity;
 	}
 	

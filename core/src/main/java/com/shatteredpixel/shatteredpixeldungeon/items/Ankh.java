@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ public class Ankh extends Item {
 		bones = true;
 	}
 
-	private boolean blessed = false;
+	private Boolean blessed = false;
 	
 	@Override
 	public boolean isUpgradable() {
@@ -83,7 +83,7 @@ public class Ankh extends Item {
 				hero.busy();
 
 
-				Sample.INSTANCE.play( Assets.Sounds.DRINK );
+				Sample.INSTANCE.play( Assets.SND_DRINK );
 				CellEmitter.get(hero.pos).start(Speck.factory(Speck.LIGHT), 0.2f, 3);
 				hero.sprite.operate( hero.pos );
 			}
@@ -98,12 +98,8 @@ public class Ankh extends Item {
 			return super.desc();
 	}
 
-	public boolean isBlessed(){
+	public Boolean isBlessed(){
 		return blessed;
-	}
-
-	public void bless(){
-		blessed = true;
 	}
 
 	private static final Glowing WHITE = new Glowing( 0xFFFFCC );
@@ -128,7 +124,7 @@ public class Ankh extends Item {
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		return 50 * quantity;
 	}
 }

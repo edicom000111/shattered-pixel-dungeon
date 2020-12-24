@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,11 +48,9 @@ public class Bag extends Item implements Iterable<Item> {
 	
 	public Char owner;
 	
-	public ArrayList<Item> items = new ArrayList<>();
-
-	public int capacity(){
-		return 20; // default container size
-	}
+	public ArrayList<Item> items = new ArrayList<Item>();
+	
+	public int size = 1;
 	
 	@Override
 	public void execute( Hero hero, String action ) {
@@ -69,7 +67,18 @@ public class Bag extends Item implements Iterable<Item> {
 	@Override
 	public boolean collect( Bag container ) {
 
-		grabItems(container);
+		for (Item item : container.items.toArray( new Item[0] )) {
+			if (grab( item )) {
+				int slot = Dungeon.quickslot.getSlot(item);
+				item.detachAll(container);
+				if (!item.collect(this)) {
+					item.collect(container);
+				}
+				if (slot != -1) {
+					Dungeon.quickslot.setSlot(slot, item);
+				}
+			}
+		}
 
 		if (super.collect( container )) {
 			
@@ -89,27 +98,6 @@ public class Bag extends Item implements Iterable<Item> {
 		for (Item item : items)
 			Dungeon.quickslot.clearItem(item);
 		updateQuickslot();
-	}
-
-	public void grabItems(){
-		if (owner != null && owner instanceof Hero && this != ((Hero) owner).belongings.backpack) {
-			grabItems(((Hero) owner).belongings.backpack);
-		}
-	}
-
-	public void grabItems( Bag container ){
-		for (Item item : container.items.toArray( new Item[0] )) {
-			if (canHold( item )) {
-				int slot = Dungeon.quickslot.getSlot(item);
-				item.detachAll(container);
-				if (!item.collect(this)) {
-					item.collect(container);
-				}
-				if (slot != -1) {
-					Dungeon.quickslot.setSlot(slot, item);
-				}
-			}
-		}
 	}
 
 	@Override
@@ -145,7 +133,7 @@ public class Bag extends Item implements Iterable<Item> {
 		super.restoreFromBundle( bundle );
 		for (Bundlable item : bundle.getCollection( ITEMS )) {
 			if (item != null) ((Item)item).collect( this );
-		}
+		};
 	}
 	
 	public boolean contains( Item item ) {
@@ -158,17 +146,8 @@ public class Bag extends Item implements Iterable<Item> {
 		}
 		return false;
 	}
-
-	public boolean canHold( Item item ){
-		if (items.contains(item) || item instanceof Bag || items.size() < capacity()){
-			return true;
-		} else if (item.stackable) {
-			for (Item i : items) {
-				if (item.isSimilar( i )) {
-					return true;
-				}
-			}
-		}
+	
+	public boolean grab( Item item ) {
 		return false;
 	}
 

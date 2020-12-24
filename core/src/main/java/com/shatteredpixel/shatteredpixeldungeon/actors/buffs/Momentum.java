@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ public class Momentum extends Buff {
 		turnsSinceMove++;
 		if (turnsSinceMove > 0){
 			stacks = Math.max(0, stacks - turnsSinceMove);
+			BuffIndicator.refreshHero();
 			if (stacks == 0) detach();
 		}
 		spend(TICK);
@@ -49,6 +50,7 @@ public class Momentum extends Buff {
 	public void gainStack(){
 		stacks = Math.min(stacks+1, 10);
 		turnsSinceMove = -1;
+		BuffIndicator.refreshHero();
 	}
 	
 	public int stacks(){
@@ -61,8 +63,8 @@ public class Momentum extends Buff {
 	}
 	
 	public int evasionBonus( int excessArmorStr ){
-		//8 evasion, +2 evasion per excess str, at max stacks
-		return Math.round((0.8f + 0.2f*excessArmorStr) * stacks);
+		//10 evasion, +2.5 evasion per excess str, at max stacks
+		return Math.round((1f + 0.25f*excessArmorStr) * stacks);
 	}
 	
 	@Override
@@ -72,14 +74,13 @@ public class Momentum extends Buff {
 	
 	@Override
 	public void tintIcon(Image icon) {
-		icon.invert();
+		if (stacks <= 5) {
+			icon.hardlight(0.2f * (stacks - 1), 1f, 0f);
+		} else {
+			icon.hardlight(1f, 1f - 0.2f*(stacks - 6), 0f);
+		}
 	}
-
-	@Override
-	public float iconFadePercent() {
-		return (10-stacks)/10f;
-	}
-
+	
 	@Override
 	public String toString() {
 		return Messages.get(this, "name");

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,10 @@
 
 package com.watabou.noosa;
 
-import com.badlogic.gdx.graphics.Pixmap;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
 
@@ -29,7 +32,7 @@ public class Halo extends Image {
 	
 	private static final Object CACHE_KEY = Halo.class;
 	
-	protected static final int RADIUS	= 128;
+	protected static final int RADIUS	= 64;
 	
 	protected float radius = RADIUS;
 	protected float brightness = 1;
@@ -38,12 +41,14 @@ public class Halo extends Image {
 		super();
 		
 		if (!TextureCache.contains( CACHE_KEY )) {
-			Pixmap pixmap = new Pixmap(2*RADIUS+1, 2*RADIUS+1, Pixmap.Format.RGBA8888);
-			pixmap.setColor( 0xFFFFFF08 );
-			for (int i = 0; i < RADIUS; i+=2) {
-				pixmap.fillCircle(RADIUS, RADIUS, (RADIUS - i));
+			Bitmap bmp = Bitmap.createBitmap( RADIUS * 2, RADIUS * 2, Bitmap.Config.ARGB_8888 );
+			Canvas canvas = new Canvas( bmp );
+			Paint paint = new Paint();
+			paint.setColor( 0x0AFFFFFF );
+			for (int i = 0; i < 50; i++) {
+				canvas.drawCircle(RADIUS, RADIUS, RADIUS * (i+1)/50f, paint);
 			}
-			TextureCache.add( CACHE_KEY, new SmartTexture( pixmap ) );
+			TextureCache.add( CACHE_KEY, new SmartTexture( bmp ) );
 		}
 		
 		texture( CACHE_KEY );

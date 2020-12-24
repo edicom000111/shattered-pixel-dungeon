@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.FileUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,16 +53,16 @@ public class GamesInProgress {
 		return FileUtils.dirExists(Messages.format(GAME_FOLDER, slot));
 	}
 	
-	public static String gameFolder( int slot ){
-		return Messages.format(GAME_FOLDER, slot);
+	public static File gameFolder( int slot ){
+		return FileUtils.getDir(Messages.format(GAME_FOLDER, slot));
 	}
 	
-	public static String gameFile( int slot ){
-		return gameFolder(slot) + "/" + GAME_FILE;
+	public static File gameFile( int slot ){
+		return FileUtils.getFile(gameFolder( slot ), GAME_FILE);
 	}
 	
-	public static String depthFile( int slot, int depth ) {
-		return gameFolder(slot) + "/" + Messages.format(DEPTH_FILE, depth);
+	public static File depthFile( int slot, int depth ) {
+		return FileUtils.getFile( gameFolder(slot), Messages.format(DEPTH_FILE, depth));
 	}
 	
 	public static int firstEmpty(){
@@ -102,8 +103,8 @@ public class GamesInProgress {
 				info.slot = slot;
 				Dungeon.preview(info, bundle);
 				
-				//saves from before v0.7.5e are not supported
-				if (info.version < ShatteredPixelDungeon.v0_7_5e) {
+				//saves from before 0.6.5c are not supported
+				if (info.version < ShatteredPixelDungeon.v0_6_5c) {
 					info = null;
 				}
 
@@ -140,7 +141,7 @@ public class GamesInProgress {
 		
 		info.goldCollected = Statistics.goldCollected;
 		info.maxDepth = Statistics.deepestFloor;
-
+		
 		slotStates.put( slot, info );
 	}
 	

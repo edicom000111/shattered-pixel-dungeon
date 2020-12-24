@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,26 +22,19 @@
 package com.shatteredpixel.shatteredpixeldungeon.scenes;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
-import com.watabou.input.GameAction;
-import com.watabou.input.KeyBindings;
-import com.watabou.input.KeyEvent;
-import com.watabou.input.PointerEvent;
-import com.watabou.input.ScrollEvent;
+import com.watabou.input.Touchscreen.Touch;
 import com.watabou.noosa.Camera;
-import com.watabou.noosa.ScrollArea;
+import com.watabou.noosa.TouchArea;
 import com.watabou.utils.GameMath;
 import com.watabou.utils.PointF;
-import com.watabou.utils.Signal;
 
-public class CellSelector extends ScrollArea {
+public class CellSelector extends TouchArea {
 
 	public Listener listener = null;
 	
@@ -54,72 +47,34 @@ public class CellSelector extends ScrollArea {
 		camera = map.camera();
 		
 		dragThreshold = PixelScene.defaultZoom * DungeonTilemap.SIZE / 2;
-		
-		mouseZoom = camera.zoom;
-		KeyEvent.addKeyListener( keyListener );
-	}
-	
-	private float mouseZoom;
-	
-	@Override
-	protected void onScroll( ScrollEvent event ) {
-		float diff = event.amount/10f;
-		
-		//scale zoom difference so zooming is consistent
-		diff /= ((camera.zoom+1)/camera.zoom)-1;
-		diff = Math.min(1, diff);
-		mouseZoom = GameMath.gate( PixelScene.minZoom, mouseZoom - diff, PixelScene.maxZoom );
-		
-		zoom( Math.round(mouseZoom) );
 	}
 	
 	@Override
-	protected void onClick( PointerEvent event ) {
+	protected void onClick( Touch touch ) {
 		if (dragging) {
 			
 			dragging = false;
 			
 		} else {
 			
-			PointF p = Camera.main.screenToCamera( (int) event.current.x, (int) event.current.y );
-
-			//Prioritizes a sprite if it and a tile overlap, so long as that sprite isn't more than 4 pixels into another tile.
-			//The extra check prevents large sprites from blocking the player from clicking adjacent tiles
-
-			//hero first
-			if (Dungeon.hero.sprite != null && Dungeon.hero.sprite.overlapsPoint( p.x, p.y )){
-				PointF c = DungeonTilemap.tileCenterToWorld(Dungeon.hero.pos);
-				if (Math.abs(p.x - c.x) <= 12 && Math.abs(p.y - c.y) <= 12) {
-					select(Dungeon.hero.pos);
+			PointF p = Camera.main.screenToCamera( (int)touch.current.x, (int)touch.current.y );
+			for (Char mob : Dungeon.level.mobs.toArray(new Mob[0])){
+				if (mob.sprite != null && mob.sprite.overlapsPoint( p.x, p.y)){
+					select( mob.pos );
 					return;
 				}
 			}
 
-			//then mobs
-			for (Char mob : Dungeon.level.mobs.toArray(new Mob[0])){
-				if (mob.sprite != null && mob.sprite.overlapsPoint( p.x, p.y )){
-					PointF c = DungeonTilemap.tileCenterToWorld(mob.pos);
-					if (Math.abs(p.x - c.x) <= 12 && Math.abs(p.y - c.y) <= 12) {
-						select(mob.pos);
-						return;
-					}
-				}
-			}
-
-			//then heaps
-			for (Heap heap : Dungeon.level.heaps.valueList()){
+			for (Heap heap : Dungeon.level.heaps.values()){
 				if (heap.sprite != null && heap.sprite.overlapsPoint( p.x, p.y)){
-					PointF c = DungeonTilemap.tileCenterToWorld(heap.pos);
-					if (Math.abs(p.x - c.x) <= 12 && Math.abs(p.y - c.y) <= 12) {
-						select(heap.pos);
-						return;
-					}
+					select( heap.pos );
+					return;
 				}
 			}
 			
 			select( ((DungeonTilemap)target).screenToTile(
-				(int) event.current.x,
-				(int) event.current.y,
+				(int)touch.current.x,
+				(int)touch.current.y,
 					true ) );
 		}
 	}
@@ -156,47 +111,47 @@ public class CellSelector extends ScrollArea {
 	}
 	
 	private boolean pinching = false;
-	private PointerEvent another;
+	private Touch another;
 	private float startZoom;
 	private float startSpan;
 	
 	@Override
-	protected void onPointerDown( PointerEvent event ) {
+	protected void onTouchDown( Touch t ) {
 
-		if (event != curEvent && another == null) {
+		if (t != touch && another == null) {
 					
-			if (!curEvent.down) {
-				curEvent = event;
-				onPointerDown( event );
+			if (!touch.down) {
+				touch = t;
+				onTouchDown( t );
 				return;
 			}
 			
 			pinching = true;
 			
-			another = event;
-			startSpan = PointF.distance( curEvent.current, another.current );
+			another = t;
+			startSpan = PointF.distance( touch.current, another.current );
 			startZoom = camera.zoom;
 
 			dragging = false;
-		} else if (event != curEvent) {
+		} else if (t != touch) {
 			reset();
 		}
 	}
 	
 	@Override
-	protected void onPointerUp( PointerEvent event ) {
-		if (pinching && (event == curEvent || event == another)) {
+	protected void onTouchUp( Touch t ) {
+		if (pinching && (t == touch || t == another)) {
 			
 			pinching = false;
 			
 			zoom(Math.round( camera.zoom ));
 			
 			dragging = true;
-			if (event == curEvent) {
-				curEvent = another;
+			if (t == touch) {
+				touch = another;
 			}
 			another = null;
-			lastPos.set( curEvent.current );
+			lastPos.set( touch.current );
 		}
 	}
 	
@@ -204,11 +159,13 @@ public class CellSelector extends ScrollArea {
 	private PointF lastPos = new PointF();
 	
 	@Override
-	protected void onDrag( PointerEvent event ) {
+	protected void onDrag( Touch t ) {
+		 
+		camera.target = null;
 
 		if (pinching) {
 
-			float curSpan = PointF.distance( curEvent.current, another.current );
+			float curSpan = PointF.distance( touch.current, another.current );
 			float zoom = (startZoom * curSpan / startSpan);
 			camera.zoom( GameMath.gate(
 				PixelScene.minZoom,
@@ -217,88 +174,17 @@ public class CellSelector extends ScrollArea {
 
 		} else {
 		
-			if (!dragging && PointF.distance( event.current, event.start ) > dragThreshold) {
+			if (!dragging && PointF.distance( t.current, t.start ) > dragThreshold) {
 				
 				dragging = true;
-				lastPos.set( event.current );
+				lastPos.set( t.current );
 				
 			} else if (dragging) {
-				camera.shift( PointF.diff( lastPos, event.current ).invScale( camera.zoom ) );
-				lastPos.set( event.current );
+				camera.scroll.offset( PointF.diff( lastPos, t.current ).invScale( camera.zoom ) );
+				lastPos.set( t.current );
 			}
 		}
 		
-	}
-	
-	private GameAction heldAction = SPDAction.NONE;
-	private int heldTurns = 0;
-	
-	private Signal.Listener<KeyEvent> keyListener = new Signal.Listener<KeyEvent>() {
-		@Override
-		public boolean onSignal(KeyEvent event) {
-			GameAction action = KeyBindings.getActionForKey( event );
-			if (!event.pressed){
-				
-				if (heldAction != SPDAction.NONE && heldAction == action) {
-					resetKeyHold();
-					return true;
-				} else {
-					if (action == SPDAction.ZOOM_IN){
-						zoom( camera.zoom+1 );
-						return true;
-
-					} else if (action == SPDAction.ZOOM_OUT){
-						zoom( camera.zoom-1 );
-						return true;
-					}
-				}
-			} else if (moveFromAction(action)) {
-				heldAction = action;
-				return true;
-			}
-			
-			return false;
-		}
-	};
-	
-	private boolean moveFromAction(GameAction action){
-		int cell = Dungeon.hero.pos;
-
-		if (action == SPDAction.N)  cell += -Dungeon.level.width();
-		if (action == SPDAction.NE) cell += +1-Dungeon.level.width();
-		if (action == SPDAction.E)  cell += +1;
-		if (action == SPDAction.SE) cell += +1+Dungeon.level.width();
-		if (action == SPDAction.S)  cell += +Dungeon.level.width();
-		if (action == SPDAction.SW) cell += -1+Dungeon.level.width();
-		if (action == SPDAction.W)  cell += -1;
-		if (action == SPDAction.NW) cell += -1-Dungeon.level.width();
-		
-		if (cell != Dungeon.hero.pos){
-			//each step when keyboard moving takes 0.15s, 0.125s, 0.1s, 0.1s, ...
-			// this is to make it easier to move 1 or 2 steps without overshooting
-			CharSprite.setMoveInterval( CharSprite.DEFAULT_MOVE_INTERVAL +
-			                            Math.max(0, 0.05f - heldTurns *0.025f));
-			select(cell);
-			return true;
-
-		} else {
-			return false;
-		}
-
-	}
-	
-	public void processKeyHold(){
-		if (heldAction != SPDAction.NONE){
-			enabled = true;
-			heldTurns++;
-			moveFromAction(heldAction);
-		}
-	}
-	
-	public void resetKeyHold(){
-		heldAction = SPDAction.NONE;
-		heldTurns = 0;
-		CharSprite.setMoveInterval( CharSprite.DEFAULT_MOVE_INTERVAL );
 	}
 	
 	public void cancel() {
@@ -326,13 +212,7 @@ public class CellSelector extends ScrollArea {
 			enabled = value;
 		}
 	}
-	
-	@Override
-	public void destroy() {
-		super.destroy();
-		KeyEvent.removeKeyListener( keyListener );
-	}
-	
+
 	public interface Listener {
 		void onSelect( Integer cell );
 		String prompt();

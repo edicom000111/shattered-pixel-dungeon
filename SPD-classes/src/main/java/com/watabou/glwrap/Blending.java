@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,9 @@
 
 package com.watabou.glwrap;
 
-import com.badlogic.gdx.Gdx;
+import android.opengl.GLES20;
+
+import javax.microedition.khronos.opengles.GL10;
 
 public class Blending {
 	
@@ -31,21 +33,21 @@ public class Blending {
 	}
 	
 	public static void enable(){
-		Gdx.gl.glEnable( Gdx.gl.GL_BLEND );
+		GLES20.glEnable( GL10.GL_BLEND );
 	}
 	
 	public static void disable(){
-		Gdx.gl.glDisable( Gdx.gl.GL_BLEND );
+		GLES20.glDisable( GL10.GL_BLEND );
 	}
 	
 	//in this mode colors overwrite eachother, based on alpha value
 	public static void setNormalMode(){
-		Gdx.gl.glBlendFunc( Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA );
+		GLES20.glBlendFunc( GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA );
 	}
 	
 	//in this mode colors add to eachother, eventually reaching pure white
 	public static void setLightMode(){
-		Gdx.gl.glBlendFunc( Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE );
+		GLES20.glBlendFunc( GL10.GL_SRC_ALPHA, GL10.GL_ONE );
 	}
 	
 }

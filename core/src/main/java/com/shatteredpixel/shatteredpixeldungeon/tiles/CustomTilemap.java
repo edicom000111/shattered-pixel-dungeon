@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ package com.shatteredpixel.shatteredpixeldungeon.tiles;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.watabou.noosa.Image;
-import com.watabou.noosa.NoosaScript;
 import com.watabou.noosa.TextureFilm;
 import com.watabou.noosa.Tilemap;
 import com.watabou.utils.Bundlable;
@@ -37,7 +36,7 @@ public abstract class CustomTilemap implements Bundlable {
 	public int tileW = 1, tileH = 1; //width and height in tiles
 	
 	protected Object texture;
-	protected Tilemap vis = null;
+	private Tilemap vis = null;
 
 	public void pos(int pos) {
 		pos( pos%Dungeon.level.width(), pos/Dungeon.level.width() );
@@ -83,13 +82,7 @@ public abstract class CustomTilemap implements Bundlable {
 	
 	public Tilemap create(){
 		if (vis != null && vis.alive) vis.killAndErase();
-		vis = new Tilemap(texture, new TextureFilm( texture, SIZE, SIZE )){
-			@Override
-			protected NoosaScript script() {
-				//allow lighting for custom tilemaps
-				return NoosaScript.get();
-			}
-		};
+		vis = new Tilemap(texture, new TextureFilm( texture, SIZE, SIZE ));
 		vis.x = tileX*SIZE;
 		vis.y = tileY*SIZE;
 		return vis;

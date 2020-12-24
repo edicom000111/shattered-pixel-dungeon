@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -101,7 +101,7 @@ public class BeaconOfReturning extends Spell {
 		GLog.i( Messages.get(this, "set") );
 		
 		hero.sprite.operate( hero.pos );
-		Sample.INSTANCE.play( Assets.Sounds.BEACON );
+		Sample.INSTANCE.play( Assets.SND_BEACON );
 		updateQuickslot();
 	}
 	
@@ -120,9 +120,6 @@ public class BeaconOfReturning extends Spell {
 		}
 		
 		if (returnDepth == Dungeon.depth) {
-			if (!Dungeon.level.passable[returnPos] && !Dungeon.level.avoid[returnPos]){
-				returnPos = Dungeon.level.entrance;
-			}
 			ScrollOfTeleportation.appear( hero, returnPos );
 			for(Mob m : Dungeon.level.mobs){
 				if (m.pos == hero.pos){
@@ -136,7 +133,7 @@ public class BeaconOfReturning extends Spell {
 					}
 				}
 			}
-			Dungeon.level.occupyCell(hero );
+			Dungeon.level.press( returnPos, hero );
 			Dungeon.observe();
 			GameScene.updateFog();
 		} else {
@@ -190,7 +187,7 @@ public class BeaconOfReturning extends Spell {
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		//prices of ingredients, divided by output quantity
 		return Math.round(quantity * ((50 + 40) / 5f));
 	}

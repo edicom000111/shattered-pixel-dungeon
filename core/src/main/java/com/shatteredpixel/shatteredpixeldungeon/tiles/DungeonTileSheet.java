@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -392,14 +392,11 @@ public class DungeonTileSheet {
 	public static byte[] tileVariance;
 
 	public static void setupVariance(int size, long seed){
-		Random.pushGenerator( seed );
-
-			tileVariance = new byte[size];
-			for (int i = 0; i < tileVariance.length; i++) {
-				tileVariance[i] = (byte) Random.Int(100);
-			}
-
-		Random.popGenerator();
+		Random.seed( seed );
+		tileVariance = new byte[size];
+		for (int i = 0; i < tileVariance.length; i++)
+			tileVariance[i] = (byte)Random.Int(100);
+		Random.seed();
 	}
 
 	//These alt visuals will trigger 50% of the time (45% of the time if a rare alt is also present)
@@ -434,9 +431,9 @@ public class DungeonTileSheet {
 	}
 
 	public static int getVisualWithAlts(int visual, int pos){
-		if (tileVariance[pos] >= 95 && rareAltVisuals.containsKey(visual))
+		if (tileVariance[pos] >= 95 && rareAltVisuals.indexOfKey(visual) >= 0)
 			return rareAltVisuals.get(visual);
-		else if (tileVariance[pos] >= 50 && commonAltVisuals.containsKey(visual))
+		else if (tileVariance[pos] >= 50 && commonAltVisuals.indexOfKey(visual) >= 0)
 			return commonAltVisuals.get(visual);
 		else
 			return visual;

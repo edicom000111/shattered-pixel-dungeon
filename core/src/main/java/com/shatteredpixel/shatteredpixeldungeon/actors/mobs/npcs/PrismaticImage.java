@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
@@ -34,8 +35,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
-import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.AntiMagic;
-import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.PrismaticSprite;
@@ -185,18 +184,6 @@ public class PrismaticImage extends NPC {
 	}
 	
 	@Override
-	public void damage(int dmg, Object src) {
-		
-		//TODO improve this when I have proper damage source logic
-		if (hero.belongings.armor != null && hero.belongings.armor.hasGlyph(AntiMagic.class, this)
-				&& AntiMagic.RESISTS.contains(src.getClass())){
-			dmg -= AntiMagic.drRoll(hero.belongings.armor.buffedLvl());
-		}
-		
-		super.damage(dmg, src);
-	}
-	
-	@Override
 	public float speed() {
 		if (hero.belongings.armor != null){
 			return hero.belongings.armor.speedFactor(this, super.speed());
@@ -226,17 +213,6 @@ public class PrismaticImage extends NPC {
 		return s;
 	}
 	
-	@Override
-	public boolean isImmune(Class effect) {
-		if (effect == Burning.class
-				&& hero != null
-				&& hero.belongings.armor != null
-				&& hero.belongings.armor.hasGlyph(Brimstone.class, this)){
-			return true;
-		}
-		return super.isImmune(effect);
-	}
-	
 	{
 		immunities.add( ToxicGas.class );
 		immunities.add( CorrosiveGas.class );
@@ -253,7 +229,7 @@ public class PrismaticImage extends NPC {
 				destroy();
 				CellEmitter.get(pos).start( Speck.factory(Speck.LIGHT), 0.2f, 3 );
 				sprite.die();
-				Sample.INSTANCE.play( Assets.Sounds.TELEPORT );
+				Sample.INSTANCE.play( Assets.SND_TELEPORT );
 				return true;
 			} else {
 				return super.act(enemyInFOV, justAlerted);

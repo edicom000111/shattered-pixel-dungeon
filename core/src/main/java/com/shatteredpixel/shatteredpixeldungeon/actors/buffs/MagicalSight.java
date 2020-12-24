@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,15 +42,10 @@ public class MagicalSight extends FlavourBuff {
 	public int icon() {
 		return BuffIndicator.MIND_VISION;
 	}
-
+	
 	@Override
 	public void tintIcon(Image icon) {
-		icon.hardlight(1f, 1.67f, 1f);
-	}
-
-	@Override
-	public float iconFadePercent() {
-		return Math.max(0, (DURATION - visualcooldown()) / DURATION);
+		greyIcon(icon, 5f, cooldown());
 	}
 	
 	@Override

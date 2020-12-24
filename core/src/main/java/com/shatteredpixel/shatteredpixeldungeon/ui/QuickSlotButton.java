@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -32,7 +31,6 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.BArray;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
-import com.watabou.input.GameAction;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.ui.Button;
 import com.watabou.utils.PathFinder;
@@ -78,9 +76,6 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 		slot = new ItemSlot() {
 			@Override
 			protected void onClick() {
-				if (!Dungeon.hero.isAlive()){
-					return;
-				}
 				if (targeting) {
 					int cell = autoAim(lastTarget, select(slotNum));
 
@@ -97,25 +92,20 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 					item.execute( Dungeon.hero );
 				}
 			}
-			
-			@Override
-			public GameAction keyAction() {
-				return QuickSlotButton.this.keyAction();
-			}
 			@Override
 			protected boolean onLongClick() {
 				return QuickSlotButton.this.onLongClick();
 			}
 			@Override
-			protected void onPointerDown() {
-				sprite.lightness( 0.7f );
+			protected void onTouchDown() {
+				icon.lightness( 0.7f );
 			}
 			@Override
-			protected void onPointerUp() {
-				sprite.resetColor();
+			protected void onTouchUp() {
+				icon.resetColor();
 			}
 		};
-		slot.showExtraInfo( false );
+		slot.showParams( true, false, true );
 		add( slot );
 		
 		crossB = Icons.TARGET.get();
@@ -135,30 +125,6 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 		crossB.x = x + (width - crossB.width) / 2;
 		crossB.y = y + (height - crossB.height) / 2;
 		PixelScene.align(crossB);
-	}
-
-	@Override
-	public void update() {
-		super.update();
-		if (targeting && lastTarget != null && lastTarget.sprite != null){
-			crossM.point(lastTarget.sprite.center(crossM));
-		}
-	}
-
-	@Override
-	public GameAction keyAction() {
-		switch (slotNum){
-			case 0:
-				return SPDAction.QUICKSLOT_1;
-			case 1:
-				return SPDAction.QUICKSLOT_2;
-			case 2:
-				return SPDAction.QUICKSLOT_3;
-			case 3:
-				return SPDAction.QUICKSLOT_4;
-			default:
-				return super.keyAction();
-		}
 	}
 	
 	@Override
@@ -215,7 +181,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 			sprite.parent.addToFront( crossM );
 			crossM.point(sprite.center(crossM));
 
-			crossB.point(slot.sprite.center(crossB));
+			crossB.point(slot.icon.center(crossB));
 			crossB.visible = true;
 
 		} else {
@@ -236,7 +202,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 	public static int autoAim(Char target, Item item){
 
 		//first try to directly target
-		if (item.targetingPos(Dungeon.hero, target.pos) == target.pos) {
+		if (item.throwPos(Dungeon.hero, target.pos) == target.pos) {
 			return target.pos;
 		}
 
@@ -244,7 +210,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 		PathFinder.buildDistanceMap( target.pos, BArray.not( new boolean[Dungeon.level.length()], null ), 2 );
 		for (int i = 0; i < PathFinder.distance.length; i++) {
 			if (PathFinder.distance[i] < Integer.MAX_VALUE
-					&& item.targetingPos(Dungeon.hero, i) == target.pos)
+					&& item.throwPos(Dungeon.hero, i) == target.pos)
 				return i;
 		}
 
@@ -261,7 +227,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 	}
 	
 	public static void target( Char target ) {
-		if (target != null && target.alignment != Char.Alignment.ALLY) {
+		if (target != Dungeon.hero) {
 			lastTarget = target;
 			
 			TargetHealthIndicator.instance.target( target );

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,6 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.utils.Bundle;
 
 public class AdrenalineSurge extends Buff {
-
-	public static float DURATION = 800f;
 	
 	{
 		type = buffType.POSITIVE;
@@ -61,12 +59,7 @@ public class AdrenalineSurge extends Buff {
 	public int icon() {
 		return BuffIndicator.FURY;
 	}
-
-	@Override
-	public float iconFadePercent() {
-		return Math.max(0, (DURATION - visualcooldown()) / DURATION);
-	}
-
+	
 	@Override
 	public String toString() {
 		return Messages.get(this, "name");
@@ -74,7 +67,7 @@ public class AdrenalineSurge extends Buff {
 	
 	@Override
 	public String desc() {
-		return Messages.get(this, "desc", boost, dispTurns(visualcooldown()));
+		return Messages.get(this, "desc", boost, dispTurns(cooldown()+1));
 	}
 	
 	private static final String BOOST	    = "boost";
@@ -91,6 +84,11 @@ public class AdrenalineSurge extends Buff {
 	public void restoreFromBundle( Bundle bundle ) {
 		super.restoreFromBundle( bundle );
 		boost = bundle.getInt( BOOST );
-		interval = bundle.getFloat(INTERVAL);
+		//pre-0.7.1
+		if (bundle.contains(INTERVAL)) {
+			interval = bundle.getFloat(INTERVAL);
+		} else {
+			interval = 800f;
+		}
 	}
 }

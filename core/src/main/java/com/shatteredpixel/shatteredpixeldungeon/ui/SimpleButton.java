@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,9 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.ui;
 
-import com.watabou.input.PointerEvent;
+import com.watabou.input.Touchscreen.Touch;
 import com.watabou.noosa.Image;
-import com.watabou.noosa.PointerArea;
+import com.watabou.noosa.TouchArea;
 import com.watabou.noosa.ui.Component;
 
 public class SimpleButton extends Component {
@@ -43,19 +43,19 @@ public class SimpleButton extends Component {
 		image = new Image();
 		add( image );
 		
-		add( new PointerArea( image ) {
+		add( new TouchArea( image ) {
 			@Override
-			protected void onPointerDown( PointerEvent event ) {
+			protected void onTouchDown(Touch touch) {
 				image.brightness( 1.2f );
-			}
+			};
 			@Override
-			protected void onPointerUp( PointerEvent event ) {
+			protected void onTouchUp(Touch touch) {
 				image.brightness( 1.0f );
-			}
+			};
 			@Override
-			protected void onClick( PointerEvent event ) {
+			protected void onClick( Touch touch ) {
 				SimpleButton.this.onClick();
-			}
+			};
 		} );
 	}
 	
@@ -65,5 +65,5 @@ public class SimpleButton extends Component {
 		image.y = y;
 	}
 	
-	protected void onClick() {}
+	protected void onClick() {};
 }

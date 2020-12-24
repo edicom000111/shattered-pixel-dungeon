@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,22 +31,16 @@ public class MagicalHolster extends Bag {
 
 	{
 		image = ItemSpriteSheet.HOLSTER;
+		
+		size = 20;
 	}
 
 	public static final float HOLSTER_SCALE_FACTOR = 0.85f;
 	public static final float HOLSTER_DURABILITY_FACTOR = 1.2f;
 	
 	@Override
-	public boolean canHold( Item item ) {
-		if (item instanceof Wand || item instanceof MissileWeapon || item instanceof Bomb){
-			return super.canHold(item);
-		} else {
-			return false;
-		}
-	}
-
-	public int capacity(){
-		return 19;
+	public boolean grab( Item item ) {
+		return item instanceof Wand || item instanceof MissileWeapon || item instanceof Bomb;
 	}
 	
 	@Override
@@ -80,7 +74,7 @@ public class MagicalHolster extends Bag {
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		return 60;
 	}
 

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,14 +25,9 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.utils.Random;
 
 public class RingOfForce extends Ring {
-
-	{
-		icon = ItemSpriteSheet.Icons.RING_FORCE;
-	}
 
 	@Override
 	protected RingBuff buff( ) {
@@ -40,7 +35,7 @@ public class RingOfForce extends Ring {
 	}
 	
 	public static int armedDamageBonus( Char ch ){
-		return getBuffedBonus( ch, Force.class);
+		return getBonus( ch, Force.class);
 	}
 	
 	
@@ -57,7 +52,7 @@ public class RingOfForce extends Ring {
 
 	public static int damageRoll( Hero hero ){
 		if (hero.buff(Force.class) != null) {
-			int level = getBuffedBonus(hero, Force.class);
+			int level = getBonus(hero, Force.class);
 			float tier = tier(hero.STR());
 			return Random.NormalIntRange(min(level, tier), max(level, tier));
 		} else {
@@ -86,8 +81,7 @@ public class RingOfForce extends Ring {
 	public String statsInfo() {
 		float tier = tier(Dungeon.hero.STR());
 		if (isIdentified()) {
-			int level = soloBuffedBonus();
-			return Messages.get(this, "stats", min(level, tier), max(level, tier), level);
+			return Messages.get(this, "stats", min(soloBonus(), tier), max(soloBonus(), tier), soloBonus());
 		} else {
 			return Messages.get(this, "typical_stats", min(1, tier), max(1, tier), 1);
 		}

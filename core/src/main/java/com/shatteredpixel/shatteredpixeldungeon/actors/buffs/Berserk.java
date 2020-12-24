@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ import com.watabou.utils.GameMath;
 public class Berserk extends Buff {
 
 	private enum State{
-		NORMAL, BERSERK, RECOVERING
+		NORMAL, BERSERK, RECOVERING;
 	}
 	private State state = State.NORMAL;
 
@@ -60,9 +60,17 @@ public class Berserk extends Buff {
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
-
-		state = bundle.getEnum(STATE, State.class);
-		power = bundle.getFloat(POWER);
+		//pre-0.6.5 saves
+		if (bundle.contains("exhaustion")){
+			state = State.RECOVERING;
+		} else {
+			state = bundle.getEnum(STATE, State.class);
+		}
+		if (bundle.contains(POWER)){
+			power = bundle.getFloat(POWER);
+		} else {
+			power = 1f;
+		}
 		if (state == State.RECOVERING) levelRecovery = bundle.getFloat(LEVEL_RECOVERY);
 	}
 
@@ -71,15 +79,12 @@ public class Berserk extends Buff {
 		if (berserking()){
 			ShieldBuff buff = target.buff(WarriorShield.class);
 			if (target.HP <= 0) {
-				int dmg = 1 + (int)Math.ceil(target.shielding() * 0.1f);
 				if (buff != null && buff.shielding() > 0) {
-					buff.absorbDamage(dmg);
+					buff.absorbDamage(1 + (int)Math.ceil(target.shielding() * 0.1f));
 				} else {
 					//if there is no shield buff, or it is empty, then try to remove from other shielding buffs
-					for (ShieldBuff s : target.buffs(ShieldBuff.class)){
-						dmg = s.absorbDamage(dmg);
-						if (dmg == 0) break;
-					}
+					buff = target.buff(ShieldBuff.class);
+					if (buff != null) buff.absorbDamage(1 + (int)Math.ceil(target.shielding() * 0.1f));
 				}
 				if (target.shielding() <= 0) {
 					target.die(this);
@@ -88,15 +93,17 @@ public class Berserk extends Buff {
 			} else {
 				state = State.RECOVERING;
 				levelRecovery = LEVEL_RECOVER_START;
+				BuffIndicator.refreshHero();
 				if (buff != null) buff.absorbDamage(buff.shielding());
 				power = 0f;
 			}
 		} else if (state == State.NORMAL) {
-			power -= GameMath.gate(0.1f, power, 1f) * 0.067f * Math.pow((target.HP/(float)target.HT), 2);
+			power -= GameMath.gate(0.1f, power, 1f) * 0.05f * Math.pow((target.HP/(float)target.HT), 2);
 			
 			if (power <= 0){
 				detach();
 			}
+			BuffIndicator.refreshHero();
 		}
 		spend(TICK);
 		return true;
@@ -113,10 +120,11 @@ public class Berserk extends Buff {
 			WarriorShield shield = target.buff(WarriorShield.class);
 			if (shield != null){
 				state = State.BERSERK;
+				BuffIndicator.refreshHero();
 				shield.supercharge(shield.maxShield() * 10);
 
 				SpellSprite.show(target, SpellSprite.BERSERK);
-				Sample.INSTANCE.play( Assets.Sounds.CHALLENGE );
+				Sample.INSTANCE.play( Assets.SND_CHALLENGE );
 				GameScene.flash(0xFF0000);
 			}
 
@@ -128,12 +136,13 @@ public class Berserk extends Buff {
 	public void damage(int damage){
 		if (state == State.RECOVERING) return;
 		power = Math.min(1.1f, power + (damage/(float)target.HT)/3f );
-		BuffIndicator.refreshHero(); //show new power immediately
+		BuffIndicator.refreshHero();
 	}
 
 	public void recover(float percent){
 		if (levelRecovery > 0){
 			levelRecovery -= percent;
+			BuffIndicator.refreshHero();
 			if (levelRecovery <= 0) {
 				state = State.NORMAL;
 				levelRecovery = 0;
@@ -150,30 +159,19 @@ public class Berserk extends Buff {
 	public void tintIcon(Image icon) {
 		switch (state){
 			case NORMAL: default:
-				if (power < 1f) icon.hardlight(1f, 0.5f, 0f);
-				else            icon.hardlight(1f, 0f, 0f);
+				if (power < 0.5f)       icon.hardlight(1f, 1f, 1f - 2*(power));
+				else if (power < 1f)    icon.hardlight(1f, 1.5f - power, 0f);
+				else                    icon.hardlight(1f, 0f, 0f);
 				break;
 			case BERSERK:
 				icon.hardlight(1f, 0f, 0f);
 				break;
 			case RECOVERING:
-				icon.hardlight(0, 0, 1f);
+				icon.hardlight(1f - (levelRecovery*0.5f), 1f - (levelRecovery*0.3f), 1f);
 				break;
 		}
 	}
 	
-	@Override
-	public float iconFadePercent() {
-		switch (state){
-			case NORMAL: default:
-				return Math.max(0f, 1f - power);
-			case BERSERK:
-				return 0f;
-			case RECOVERING:
-				return 1f - levelRecovery/2f;
-		}
-	}
-
 	@Override
 	public String toString() {
 		switch (state){

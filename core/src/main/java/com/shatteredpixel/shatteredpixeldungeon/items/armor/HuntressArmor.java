@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +22,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.armor;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Shuriken;
@@ -42,20 +40,16 @@ public class HuntressArmor extends ClassArmor {
 		image = ItemSpriteSheet.ARMOR_HUNTRESS;
 	}
 	
-	private HashMap<Callback, Mob> targets = new HashMap<>();
+	private HashMap<Callback, Mob> targets = new HashMap<Callback, Mob>();
 	
 	@Override
 	public void doSpecial() {
-
-		charge -= 35;
-		updateQuickslot();
-
+		
 		Item proto = new Shuriken();
 		
 		for (Mob mob : Dungeon.level.mobs) {
 			if (Dungeon.level.distance(curUser.pos, mob.pos) <= 12
-				&& Dungeon.level.heroFOV[mob.pos]
-				&& mob.alignment != Char.Alignment.ALLY) {
+				&& Dungeon.level.heroFOV[mob.pos]) {
 				
 				Callback callback = new Callback() {
 					@Override
@@ -63,14 +57,13 @@ public class HuntressArmor extends ClassArmor {
 						curUser.attack( targets.get( this ) );
 						targets.remove( this );
 						if (targets.isEmpty()) {
-							Invisibility.dispel();
 							curUser.spendAndNext( curUser.attackDelay() );
 						}
 					}
 				};
 				
 				((MissileSprite)curUser.sprite.parent.recycle( MissileSprite.class )).
-					reset( curUser.sprite, mob.pos, proto, callback );
+					reset( curUser.pos, mob.pos, proto, callback );
 				
 				targets.put( callback, mob );
 			}
@@ -80,7 +73,9 @@ public class HuntressArmor extends ClassArmor {
 			GLog.w( Messages.get(this, "no_enemies") );
 			return;
 		}
-
+		
+		curUser.HP -= (curUser.HP / 3);
+		
 		curUser.sprite.zap( curUser.pos );
 		curUser.busy();
 	}

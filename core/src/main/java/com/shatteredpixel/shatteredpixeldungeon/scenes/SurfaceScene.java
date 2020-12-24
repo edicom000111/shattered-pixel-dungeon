@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.glwrap.Matrix;
 import com.watabou.glwrap.Quad;
-import com.watabou.input.PointerEvent;
+import com.watabou.input.Touchscreen.Touch;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -49,7 +49,7 @@ import com.watabou.noosa.Group;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.NoosaScript;
 import com.watabou.noosa.TextureFilm;
-import com.watabou.noosa.PointerArea;
+import com.watabou.noosa.TouchArea;
 import com.watabou.noosa.Visual;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Point;
@@ -81,7 +81,7 @@ public class SurfaceScene extends PixelScene {
 		
 		super.create();
 		
-		Music.INSTANCE.play( Assets.Music.SURFACE, true );
+		Music.INSTANCE.play( Assets.HAPPY, true );
 		
 		uiCamera.visible = false;
 		
@@ -199,8 +199,8 @@ public class SurfaceScene extends PixelScene {
 		window.add( a );
 		window.add( pet );
 		
-		window.add( new PointerArea( sky ) {
-			protected void onClick( PointerEvent event ) {
+		window.add( new TouchArea( sky ) {
+			protected void onClick( Touch touch ) {
 				pet.jump();
 			}
 		} );
@@ -211,7 +211,7 @@ public class SurfaceScene extends PixelScene {
 			window.add( patch );
 		}
 		
-		Image frame = new Image( Assets.Interfaces.SURFACE );
+		Image frame = new Image( Assets.SURFACE );
 
 		frame.frame( 0, 0, FRAME_WIDTH, FRAME_HEIGHT );
 		frame.x = vx - FRAME_MARGIN_X;
@@ -319,7 +319,7 @@ public class SurfaceScene extends PixelScene {
 		private static int lastIndex = -1;
 		
 		public Cloud( float y, boolean dayTime ) {
-			super( Assets.Interfaces.SURFACE );
+			super( Assets.SURFACE );
 			
 			int index;
 			do {
@@ -371,7 +371,7 @@ public class SurfaceScene extends PixelScene {
 		private static final int HEIGHT	= 32;
 		
 		public Avatar( HeroClass cl ) {
-			super( Assets.Sprites.AVATARS );
+			super( Assets.AVATARS );
 			frame( new TextureFilm( texture, WIDTH, HEIGHT ).get( cl.ordinal() ) );
 		}
 	}
@@ -405,7 +405,7 @@ public class SurfaceScene extends PixelScene {
 		
 		public GrassPatch( float tx, float ty, boolean forward ) {
 			
-			super( Assets.Interfaces.SURFACE );
+			super( Assets.SURFACE );
 			
 			frame( 88 + Random.Int( 4 ) * WIDTH, 60, WIDTH, HEIGHT );
 			

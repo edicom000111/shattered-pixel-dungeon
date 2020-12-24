@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,15 +41,14 @@ public class BlizzardBrew extends Brew {
 	public void shatter(int cell) {
 		if (Dungeon.level.heroFOV[cell]) {
 			splash( cell );
-			Sample.INSTANCE.play( Assets.Sounds.SHATTER );
-			Sample.INSTANCE.play( Assets.Sounds.GAS );
+			Sample.INSTANCE.play( Assets.SND_SHATTER );
 		}
 		
 		GameScene.add( Blob.seed( cell, 1000, Blizzard.class ) );
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		//prices of ingredients
 		return quantity * (30 + 40);
 	}

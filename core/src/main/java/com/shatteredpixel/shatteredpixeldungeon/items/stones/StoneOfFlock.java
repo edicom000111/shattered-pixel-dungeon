@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,14 +52,13 @@ public class StoneOfFlock extends Runestone {
 				sheep.lifespan = Random.IntRange(5, 8);
 				sheep.pos = cell + i;
 				GameScene.add(sheep);
-				Dungeon.level.occupyCell(sheep);
+				Dungeon.level.press(sheep.pos, sheep);
 				
 				CellEmitter.get(sheep.pos).burst(Speck.factory(Speck.WOOL), 4);
 			}
 		}
 		CellEmitter.get(cell).burst(Speck.factory(Speck.WOOL), 4);
-		Sample.INSTANCE.play(Assets.Sounds.PUFF);
-		Sample.INSTANCE.play(Assets.Sounds.SHEEP);
+		Sample.INSTANCE.play(Assets.SND_PUFF);
 		
 	}
 	

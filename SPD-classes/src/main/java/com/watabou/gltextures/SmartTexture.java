@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,8 @@
 
 package com.watabou.gltextures;
 
-import com.badlogic.gdx.graphics.Pixmap;
+import android.graphics.Bitmap;
+
 import com.watabou.glwrap.Texture;
 import com.watabou.utils.RectF;
 
@@ -36,15 +37,22 @@ public class SmartTexture extends Texture {
 	public int wModeH;
 	public int wModeV;
 	
-	public Pixmap bitmap;
+	public Bitmap bitmap;
 	
 	public Atlas atlas;
 
-	public SmartTexture( Pixmap bitmap ) {
+	protected SmartTexture( ) {
+		//useful for subclasses which want to manage their own texture data
+		// in cases where android.graphics.bitmap isn't fast enough.
+
+		//subclasses which use this MUST also override some mix of reload/generate/bind
+	}
+	
+	public SmartTexture( Bitmap bitmap ) {
 		this( bitmap, NEAREST, CLAMP, false );
 	}
 
-	public SmartTexture( Pixmap bitmap, int filtering, int wrapping, boolean premultiplied ) {
+	public SmartTexture( Bitmap bitmap, int filtering, int wrapping, boolean premultiplied ) {
 
 		this.bitmap = bitmap;
 		width = bitmap.getWidth();
@@ -58,7 +66,7 @@ public class SmartTexture extends Texture {
 	@Override
 	protected void generate() {
 		super.generate();
-		bitmap( bitmap );
+		bitmap( bitmap, premultiplied );
 		filter( fModeMin, fModeMax );
 		wrap( wModeH, wModeV );
 	}
@@ -80,8 +88,16 @@ public class SmartTexture extends Texture {
 	}
 	
 	@Override
-	public void bitmap( Pixmap bitmap ) {
-		super.bitmap( bitmap );
+	public void bitmap( Bitmap bitmap ) {
+		bitmap( bitmap, false );
+	}
+	
+	public void bitmap( Bitmap bitmap, boolean premultiplied ) {
+		if (premultiplied) {
+			super.bitmap( bitmap );
+		} else {
+			handMade( bitmap, true );
+		}
 		
 		this.bitmap = bitmap;
 		width = bitmap.getWidth();
@@ -103,7 +119,7 @@ public class SmartTexture extends Texture {
 		super.delete();
 
 		if (bitmap != null)
-			bitmap.dispose();
+			bitmap.recycle();
 		bitmap = null;
 	}
 	

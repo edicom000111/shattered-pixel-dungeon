@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,12 +26,11 @@ import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public abstract class SpecialRoom extends Room {
+public class SpecialRoom extends Room {
 	
 	@Override
 	public int minWidth() { return 5; }
@@ -42,6 +41,12 @@ public abstract class SpecialRoom extends Room {
 		return 5;
 	}
 	public int maxHeight() { return 10; }
+	
+	@Override
+	public int minConnections(int direction) {
+		if (direction == ALL)   return 1;
+		else                    return 0;
+	}
 	
 	@Override
 	public int maxConnections(int direction) {
@@ -148,8 +153,11 @@ public abstract class SpecialRoom extends Room {
 				int newidx = Random.Int( floorSpecials.size() );
 				if (newidx < index) index = newidx;
 			}
-			
-			r = Reflection.newInstance(floorSpecials.get( index ));
+			try {
+				r = floorSpecials.get( index ).newInstance();
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+			}
 			
 			if (r instanceof WeakFloorRoom){
 				pitNeededDepth = Dungeon.depth + 1;
@@ -168,7 +176,10 @@ public abstract class SpecialRoom extends Room {
 		runSpecials.clear();
 		if (bundle.contains( ROOMS )) {
 			for (Class<? extends Room> type : bundle.getClassArray(ROOMS)) {
-				runSpecials.add(type);
+				//pre-0.7.0 saves
+				if (type != null && type != LaboratoryRoom.class) {
+					runSpecials.add(type);
+				}
 			}
 		} else {
 			initForRun();

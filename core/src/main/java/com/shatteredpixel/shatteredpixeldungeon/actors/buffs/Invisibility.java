@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.watabou.noosa.Image;
 
 public class Invisibility extends FlavourBuff {
 
@@ -65,10 +66,10 @@ public class Invisibility extends FlavourBuff {
 	public int icon() {
 		return BuffIndicator.INVISIBLE;
 	}
-
+	
 	@Override
-	public float iconFadePercent() {
-		return Math.max(0, (DURATION - visualcooldown()) / DURATION);
+	public void tintIcon(Image icon) {
+		greyIcon(icon, 5f, cooldown());
 	}
 
 	@Override
@@ -88,8 +89,9 @@ public class Invisibility extends FlavourBuff {
 	}
 
 	public static void dispel() {
-		for ( Buff invis : Dungeon.hero.buffs( Invisibility.class )){
-			invis.detach();
+		Invisibility buff = Dungeon.hero.buff( Invisibility.class );
+		if (buff != null) {
+			buff.detach();
 		}
 		CloakOfShadows.cloakStealth cloakBuff = Dungeon.hero.buff( CloakOfShadows.cloakStealth.class );
 		if (cloakBuff != null) {

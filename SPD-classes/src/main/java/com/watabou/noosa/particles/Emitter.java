@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,8 +44,7 @@ public class Emitter extends Group {
 	protected int quantity;
 	
 	public boolean on = false;
-
-	private boolean started = false;
+	
 	public boolean autoKill = true;
 	
 	protected int count;
@@ -88,9 +87,7 @@ public class Emitter extends Group {
 	}
 
 	public void start( Factory factory, float interval, int quantity ) {
-
-		started = true;
-
+		
 		this.factory = factory;
 		this.lightMode = factory.lightMode();
 		
@@ -102,19 +99,9 @@ public class Emitter extends Group {
 		
 		on = true;
 	}
-
-	public static boolean freezeEmitters = false;
-
-	protected boolean isFrozen(){
-		return Game.timeTotal > 1 && freezeEmitters;
-	}
 	
 	@Override
 	public void update() {
-
-		if (isFrozen()){
-			return;
-		}
 		
 		if (on) {
 			time += Game.elapsed;
@@ -126,19 +113,13 @@ public class Emitter extends Group {
 					break;
 				}
 			}
-		} else if (started && autoKill && countLiving() == 0) {
+		} else if (autoKill && countLiving() == 0) {
 			kill();
 		}
 		
 		super.update();
 	}
-
-	@Override
-	public void revive() {
-		started = false;
-		super.revive();
-	}
-
+	
 	protected void emit( int index ) {
 		if (target == null) {
 			factory.emit(

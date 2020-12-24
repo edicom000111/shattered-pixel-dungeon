@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,10 +26,14 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.GooWarn;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
+import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.SkeletonKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.GooBlob;
@@ -38,6 +42,8 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.GooSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar;
+import com.shatteredpixel.shatteredpixeldungeon.ui.GameLog;
+import com.shatteredpixel.shatteredpixeldungeon.utils.BArray;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.audio.Sample;
@@ -63,10 +69,15 @@ public class Goo extends Mob {
 	@Override
 	public int damageRoll() {
 		int min = 1;
-		int max = (HP*2 <= HT) ? 12 : 8;
+		int max = (HP*2 <= HT) ? 15 : 10;
 		if (pumpedUp > 0) {
 			pumpedUp = 0;
-			Sample.INSTANCE.play( Assets.Sounds.BURNING );
+			PathFinder.buildDistanceMap( pos, BArray.not( Dungeon.level.solid, null ), 2 );
+			for (int i = 0; i < PathFinder.distance.length; i++) {
+				if (PathFinder.distance[i] < Integer.MAX_VALUE)
+					CellEmitter.get(i).burst(ElmoParticle.FACTORY, 10);
+			}
+			Sample.INSTANCE.play( Assets.SND_BURNING );
 			return Random.NormalIntRange( min*3, max*3 );
 		} else {
 			return Random.NormalIntRange( min, max );
@@ -119,7 +130,7 @@ public class Goo extends Mob {
 	public int attackProc( Char enemy, int damage ) {
 		damage = super.attackProc( enemy, damage );
 		if (Random.Int( 3 ) == 0) {
-			Buff.affect( enemy, Ooze.class ).set( Ooze.DURATION );
+			Buff.affect( enemy, Ooze.class ).set( 20f );
 			enemy.sprite.burst( 0x000000, 5 );
 		}
 
@@ -131,20 +142,15 @@ public class Goo extends Mob {
 	}
 
 	@Override
-	public void updateSpriteState() {
-		super.updateSpriteState();
-
-		if (pumpedUp > 0){
-			((GooSprite)sprite).pumpUp( pumpedUp );
-		}
-	}
-
-	@Override
 	protected boolean doAttack( Char enemy ) {
 		if (pumpedUp == 1) {
-			((GooSprite)sprite).pumpUp( 2 );
+			((GooSprite)sprite).pumpUp();
+			PathFinder.buildDistanceMap( pos, BArray.not( Dungeon.level.solid, null ), 2 );
+			for (int i = 0; i < PathFinder.distance.length; i++) {
+				if (PathFinder.distance[i] < Integer.MAX_VALUE)
+					GameScene.add(Blob.seed(i, 2, GooWarn.class));
+			}
 			pumpedUp++;
-			Sample.INSTANCE.play( Assets.Sounds.CHARGEUP );
 
 			spend( attackDelay() );
 
@@ -156,9 +162,9 @@ public class Goo extends Mob {
 			if (visible) {
 				if (pumpedUp >= 2) {
 					((GooSprite) sprite).pumpAttack();
-				} else {
-					sprite.attack(enemy.pos);
 				}
+				else
+					sprite.attack( enemy.pos );
 			} else {
 				attack( enemy );
 			}
@@ -171,12 +177,18 @@ public class Goo extends Mob {
 
 			pumpedUp++;
 
-			((GooSprite)sprite).pumpUp( 1 );
+			((GooSprite)sprite).pumpUp();
+
+			for (int i=0; i < PathFinder.NEIGHBOURS9.length; i++) {
+				int j = pos + PathFinder.NEIGHBOURS9[i];
+				if (!Dungeon.level.solid[j]) {
+					GameScene.add(Blob.seed(j, 2, GooWarn.class));
+				}
+			}
 
 			if (Dungeon.level.heroFOV[pos]) {
 				sprite.showStatus( CharSprite.NEGATIVE, Messages.get(this, "!!!") );
 				GLog.n( Messages.get(this, "pumpup") );
-				Sample.INSTANCE.play( Assets.Sounds.CHARGEUP, 1f, 0.8f );
 			}
 
 			spend( attackDelay() );
@@ -194,18 +206,12 @@ public class Goo extends Mob {
 
 	@Override
 	protected boolean getCloser( int target ) {
-		if (pumpedUp != 0) {
-			pumpedUp = 0;
-			sprite.idle();
-		}
+		pumpedUp = 0;
 		return super.getCloser( target );
 	}
 
 	@Override
 	public void damage(int dmg, Object src) {
-		if (!BossHealthBar.isAssigned()){
-			BossHealthBar.assignBoss( this );
-		}
 		boolean bleeding = (HP*2 <= HT);
 		super.damage(dmg, src);
 		if ((HP*2 <= HT) && !bleeding){
@@ -251,6 +257,7 @@ public class Goo extends Mob {
 			yell(Messages.get(this, "notice"));
 			for (Char ch : Actor.chars()){
 				if (ch instanceof DriedRose.GhostHero){
+					GLog.n("\n");
 					((DriedRose.GhostHero) ch).sayBoss();
 				}
 			}

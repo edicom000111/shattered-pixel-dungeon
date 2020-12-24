@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bless;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Chill;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corrosion;
@@ -44,9 +43,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FireImbue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Frost;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FrostImbue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Haste;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LifeLink;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicalSleep;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
@@ -54,25 +51,21 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ShieldBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SnipersMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Speed;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Stamina;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
-import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
+import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.AntiMagic;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Potential;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfElements;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfPsionicBlast;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
-import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFrost;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLightning;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blazing;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Grim;
@@ -86,9 +79,11 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GrimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.watabou.noosa.Camera;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.GameMath;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
@@ -100,6 +95,8 @@ public abstract class Char extends Actor {
 	public int pos = 0;
 	
 	public CharSprite sprite;
+	
+	public String name = "mob";
 	
 	public int HT;
 	public int HP;
@@ -132,50 +129,17 @@ public abstract class Char extends Actor {
 			fieldOfView = new boolean[Dungeon.level.length()];
 		}
 		Dungeon.level.updateFieldOfView( this, fieldOfView );
-
-		//throw any items that are on top of an immovable char
-		if (properties().contains(Property.IMMOVABLE)){
-			throwItems();
-		}
 		return false;
 	}
 
-	protected void throwItems(){
-		Heap heap = Dungeon.level.heaps.get( pos );
-		if (heap != null && heap.type == Heap.Type.HEAP) {
-			int n;
-			do {
-				n = pos + PathFinder.NEIGHBOURS8[Random.Int( 8 )];
-			} while (!Dungeon.level.passable[n] && !Dungeon.level.avoid[n]);
-			Dungeon.level.drop( heap.pickUp(), n ).sprite.drop( pos );
-		}
-	}
-
-	public String name(){
-		return Messages.get(this, "name");
-	}
-
-	public boolean canInteract(Char c){
-		return Dungeon.level.adjacent( pos, c.pos );
+	public boolean canInteract( Hero h ){
+		return Dungeon.level.adjacent( pos, h.pos );
 	}
 	
 	//swaps places by default
-	public boolean interact(Char c){
-
-		//can't spawn places if one char has restricted movement
-		if (rooted || c.rooted || buff(Vertigo.class) != null || c.buff(Vertigo.class) != null){
-			return true;
-		}
-
-		//don't allow char to swap onto hazard unless they're flying
-		//you can swap onto a hazard though, as you're not the one instigating the swap
-		if (!Dungeon.level.passable[pos] && !c.flying){
-			return true;
-		}
-
-		//can't swap into a space without room
-		if (properties().contains(Property.LARGE) && !Dungeon.level.openSpace[c.pos]
-			|| c.properties().contains(Property.LARGE) && !Dungeon.level.openSpace[pos]){
+	public boolean interact(){
+		
+		if (!Dungeon.level.passable[pos] && !Dungeon.hero.flying){
 			return true;
 		}
 		
@@ -203,14 +167,6 @@ public abstract class Char extends Actor {
 			sprite.place( to );
 			return true;
 		}
-	}
-
-	public void hitSound( float pitch ){
-		Sample.INSTANCE.play(Assets.Sounds.HIT, 1, pitch);
-	}
-
-	public boolean blockSound( float pitch ) {
-		return false;
 	}
 	
 	protected static final String POS       = "pos";
@@ -244,6 +200,18 @@ public abstract class Char extends Actor {
 				((Buff)b).attachTo( this );
 			}
 		}
+		
+		//pre-0.7.0
+		if (bundle.contains( "SHLD" )){
+			int legacySHLD = bundle.getInt( "SHLD" );
+			//attempt to find the buff that may have given the shield
+			ShieldBuff buff = buff(Brimstone.BrimstoneShield.class);
+			if (buff != null) legacySHLD -= buff.shielding();
+			if (legacySHLD > 0){
+				BrokenSeal.WarriorShield buff2 = buff(BrokenSeal.WarriorShield.class);
+				if (buff != null) buff2.supercharge(legacySHLD);
+			}
+		}
 	}
 	
 	public boolean attack( Char enemy ) {
@@ -251,18 +219,8 @@ public abstract class Char extends Actor {
 		if (enemy == null) return false;
 		
 		boolean visibleFight = Dungeon.level.heroFOV[pos] || Dungeon.level.heroFOV[enemy.pos];
-
-		if (enemy.isInvulnerable(getClass())) {
-
-			if (visibleFight) {
-				enemy.sprite.showStatus( CharSprite.POSITIVE, Messages.get(this, "invulnerable") );
-
-				Sample.INSTANCE.play(Assets.Sounds.HIT_PARRY, 1f, Random.Float(0.96f, 1.05f));
-			}
-
-			return false;
-
-		} else if (hit( this, enemy, false )) {
+		
+		if (hit( this, enemy, false )) {
 			
 			int dr = enemy.drRoll();
 			
@@ -278,24 +236,17 @@ public abstract class Char extends Actor {
 			int dmg;
 			Preparation prep = buff(Preparation.class);
 			if (prep != null){
-				dmg = prep.damageRoll(this);
+				dmg = prep.damageRoll(this, enemy);
 			} else {
 				dmg = damageRoll();
 			}
 			
 			int effectiveDamage = enemy.defenseProc( this, dmg );
 			effectiveDamage = Math.max( effectiveDamage - dr, 0 );
-			
-			if ( enemy.buff( Vulnerable.class ) != null){
-				effectiveDamage *= 1.33f;
-			}
-			
 			effectiveDamage = attackProc( enemy, effectiveDamage );
 			
 			if (visibleFight) {
-				if (effectiveDamage > 0 || !enemy.blockSound(Random.Float(0.96f, 1.05f))) {
-					hitSound(Random.Float(0.87f, 1.15f));
-				}
+				Sample.INSTANCE.play( Assets.SND_HIT, 1, 1, Random.Float( 0.8f, 1.25f ) );
 			}
 
 			// If the enemy is already dead, interrupt the attack.
@@ -303,6 +254,14 @@ public abstract class Char extends Actor {
 			if (!enemy.isAlive()){
 				return true;
 			}
+
+			//TODO: consider revisiting this and shaking in more cases.
+			float shake = 0f;
+			if (enemy == Dungeon.hero)
+				shake = effectiveDamage / (enemy.HT / 4);
+
+			if (shake > 1f)
+				Camera.main.shake( GameMath.gate( 1, shake, 5), 0.3f );
 
 			enemy.damage( effectiveDamage, this );
 
@@ -312,17 +271,6 @@ public abstract class Char extends Actor {
 				buff(EarthImbue.class).proc(enemy);
 			if (buff(FrostImbue.class) != null)
 				buff(FrostImbue.class).proc(enemy);
-
-			if (enemy.isAlive() && prep != null && prep.canKO(enemy)){
-				enemy.HP = 0;
-				if (!enemy.isAlive()) {
-					enemy.die(this);
-				} else {
-					//helps with triggering any on-damage effects that need to activate
-					enemy.damage(-1, this);
-				}
-				enemy.sprite.showStatus(CharSprite.NEGATIVE, Messages.get(Preparation.class, "assassinated"));
-			}
 
 			enemy.sprite.bloodBurstA( sprite.center(), effectiveDamage );
 			enemy.sprite.flash();
@@ -335,10 +283,10 @@ public abstract class Char extends Actor {
 					}
 
 					Dungeon.fail( getClass() );
-					GLog.n( Messages.capitalize(Messages.get(Char.class, "kill", name())) );
+					GLog.n( Messages.capitalize(Messages.get(Char.class, "kill", name)) );
 					
 				} else if (this == Dungeon.hero) {
-					GLog.i( Messages.capitalize(Messages.get(Char.class, "defeat", enemy.name())) );
+					GLog.i( Messages.capitalize(Messages.get(Char.class, "defeat", enemy.name)) );
 				}
 			}
 			
@@ -349,45 +297,20 @@ public abstract class Char extends Actor {
 			if (visibleFight) {
 				String defense = enemy.defenseVerb();
 				enemy.sprite.showStatus( CharSprite.NEUTRAL, defense );
-
-				//TODO enemy.defenseSound? currently miss plays for monks/crab even when the parry
-				Sample.INSTANCE.play(Assets.Sounds.MISS);
+				
+				Sample.INSTANCE.play(Assets.SND_MISS);
 			}
 			
 			return false;
 			
 		}
 	}
-
-	public static int INFINITE_ACCURACY = 1_000_000;
-	public static int INFINITE_EVASION = 1_000_000;
-
+	
 	public static boolean hit( Char attacker, Char defender, boolean magic ) {
-		float acuStat = attacker.attackSkill( defender );
-		float defStat = defender.defenseSkill( attacker );
-
-		//if accuracy or evasion are large enough, treat them as infinite.
-		//note that infinite evasion beats infinite accuracy
-		if (defStat >= INFINITE_EVASION){
-			return false;
-		} else if (acuStat >= INFINITE_ACCURACY){
-			return true;
-		}
-
-		float acuRoll = Random.Float( acuStat );
-		if (attacker.buff(Bless.class) != null) acuRoll *= 1.25f;
-		if (attacker.buff(  Hex.class) != null) acuRoll *= 0.8f;
-		for (ChampionEnemy buff : attacker.buffs(ChampionEnemy.class)){
-			acuRoll *= buff.evasionAndAccuracyFactor();
-		}
-		
-		float defRoll = Random.Float( defStat );
-		if (defender.buff(Bless.class) != null) defRoll *= 1.25f;
-		if (defender.buff(  Hex.class) != null) defRoll *= 0.8f;
-		for (ChampionEnemy buff : defender.buffs(ChampionEnemy.class)){
-			defRoll *= buff.evasionAndAccuracyFactor();
-		}
-		
+		float acuRoll = Random.Float( attacker.attackSkill( defender ) );
+		float defRoll = Random.Float( defender.defenseSkill( attacker ) );
+		if (attacker.buff(Bless.class) != null) acuRoll *= 1.20f;
+		if (defender.buff(Bless.class) != null) defRoll *= 1.20f;
 		return (magic ? acuRoll * 2 : acuRoll) >= defRoll;
 	}
 	
@@ -411,17 +334,7 @@ public abstract class Char extends Actor {
 		return 1;
 	}
 	
-	//TODO it would be nice to have a pre-armor and post-armor proc.
-	// atm attack is always post-armor and defence is already pre-armor
-	
 	public int attackProc( Char enemy, int damage ) {
-		if ( buff(Weakness.class) != null ){
-			damage *= 0.67f;
-		}
-		for (ChampionEnemy buff : buffs(ChampionEnemy.class)){
-			damage *= buff.meleeDamageFactor();
-			buff.onAttackProc( enemy );
-		}
 		return damage;
 	}
 	
@@ -460,41 +373,13 @@ public abstract class Char extends Actor {
 		if (!isAlive() || dmg < 0) {
 			return;
 		}
-
-		if(isInvulnerable(src.getClass())){
-			sprite.showStatus(CharSprite.POSITIVE, Messages.get(this, "invulnerable"));
-			return;
-		}
-
-		for (ChampionEnemy buff : buffs(ChampionEnemy.class)){
-			dmg = (int) Math.ceil(dmg * buff.damageTakenFactor());
-		}
-
-		if (!(src instanceof LifeLink) && buff(LifeLink.class) != null){
-			HashSet<LifeLink> links = buffs(LifeLink.class);
-			for (LifeLink link : links.toArray(new LifeLink[0])){
-				if (Actor.findById(link.object) == null){
-					links.remove(link);
-					link.detach();
-				}
-			}
-			dmg = (int)Math.ceil(dmg / (float)(links.size()+1));
-			for (LifeLink link : links){
-				Char ch = (Char)Actor.findById(link.object);
-				ch.damage(dmg, link);
-				if (!ch.isAlive()){
-					link.detach();
-				}
-			}
-		}
-
 		Terror t = buff(Terror.class);
 		if (t != null){
 			t.recover();
 		}
 		Charm c = buff(Charm.class);
 		if (c != null){
-			c.recover(src);
+			c.recover();
 		}
 		if (this.buff(Frost.class) != null){
 			Buff.detach( this, Frost.class );
@@ -502,7 +387,7 @@ public abstract class Char extends Actor {
 		if (this.buff(MagicalSleep.class) != null){
 			Buff.detach(this, MagicalSleep.class);
 		}
-		if (this.buff(Doom.class) != null && !isImmune(Doom.class)){
+		if (this.buff(Doom.class) != null){
 			dmg *= 2;
 		}
 		
@@ -534,12 +419,10 @@ public abstract class Char extends Actor {
 		shielded -= dmg;
 		HP -= dmg;
 		
-		if (sprite != null) {
-			sprite.showStatus(HP > HT / 2 ?
-							CharSprite.WARNING :
-							CharSprite.NEGATIVE,
-					Integer.toString(dmg + shielded));
-		}
+		sprite.showStatus( HP > HT / 2 ?
+			CharSprite.WARNING :
+			CharSprite.NEGATIVE,
+			Integer.toString( dmg + shielded ) );
 
 		if (HP < 0) HP = 0;
 
@@ -551,18 +434,6 @@ public abstract class Char extends Actor {
 	public void destroy() {
 		HP = 0;
 		Actor.remove( this );
-
-		for (Char ch : Actor.chars().toArray(new Char[0])){
-			if (ch.buff(Charm.class) != null && ch.buff(Charm.class).object == id()){
-				ch.buff(Charm.class).detach();
-			}
-			if (ch.buff(Terror.class) != null && ch.buff(Terror.class).object == id()){
-				ch.buff(Terror.class).detach();
-			}
-			if (ch.buff(SnipersMark.class) != null && ch.buff(SnipersMark.class).object == id()){
-				ch.buff(SnipersMark.class).detach();
-			}
-		}
 	}
 	
 	public void die( Object src ) {
@@ -596,7 +467,6 @@ public abstract class Char extends Actor {
 	}
 	
 	@SuppressWarnings("unchecked")
-	//returns all buffs assignable from the given buff class
 	public synchronized <T extends Buff> HashSet<T> buffs( Class<T> c ) {
 		HashSet<T> filtered = new HashSet<>();
 		for (Buff b : buffs) {
@@ -608,10 +478,9 @@ public abstract class Char extends Actor {
 	}
 
 	@SuppressWarnings("unchecked")
-	//returns an instance of the specific buff class, if it exists. Not just assignable
 	public synchronized  <T extends Buff> T buff( Class<T> c ) {
 		for (Buff b : buffs) {
-			if (b.getClass() == c) {
+			if (c.isInstance( b )) {
 				return (T)b;
 			}
 		}
@@ -683,9 +552,7 @@ public abstract class Char extends Actor {
 		if (Dungeon.level.adjacent( step, pos ) && buff( Vertigo.class ) != null) {
 			sprite.interruptMotion();
 			int newPos = pos + PathFinder.NEIGHBOURS8[Random.Int( 8 )];
-			if (!(Dungeon.level.passable[newPos] || Dungeon.level.avoid[newPos])
-					|| (properties().contains(Property.LARGE) && !Dungeon.level.openSpace[newPos])
-					|| Actor.findChar( newPos ) != null)
+			if (!(Dungeon.level.passable[newPos] || Dungeon.level.avoid[newPos]) || Actor.findChar( newPos ) != null)
 				return;
 			else {
 				sprite.move(pos, newPos);
@@ -699,11 +566,17 @@ public abstract class Char extends Actor {
 
 		pos = step;
 		
+		if (flying && Dungeon.level.map[pos] == Terrain.DOOR) {
+			Door.enter( pos );
+		}
+		
 		if (this != Dungeon.hero) {
 			sprite.visible = Dungeon.level.heroFOV[pos];
 		}
 		
-		Dungeon.level.occupyCell(this );
+		if (!flying) {
+			Dungeon.level.press( pos, this );
+		}
 	}
 	
 	public int distance( Char other ) {
@@ -765,21 +638,10 @@ public abstract class Char extends Actor {
 		return false;
 	}
 
-	//similar to isImmune, but only factors in damage.
-	//Is used in AI decision-making
-	public boolean isInvulnerable( Class effect ){
-		return false;
-	}
-
 	protected HashSet<Property> properties = new HashSet<>();
 
 	public HashSet<Property> properties() {
-		HashSet<Property> props = new HashSet<>(properties);
-		//TODO any more of these and we should make it a property of the buff, like with resistances/immunities
-		if (buff(ChampionEnemy.Giant.class) != null) {
-			props.add(Property.LARGE);
-		}
-		return props;
+		return new HashSet<>(properties);
 	}
 
 	public enum Property{
@@ -793,15 +655,12 @@ public abstract class Char extends Actor {
 				new HashSet<Class>( Arrays.asList(Bleeding.class, ToxicGas.class, Poison.class) )),
 		BLOB_IMMUNE ( new HashSet<Class>(),
 				new HashSet<Class>( Arrays.asList(Blob.class) )),
-		FIERY ( new HashSet<Class>( Arrays.asList(WandOfFireblast.class, Elemental.FireElemental.class)),
+		FIERY ( new HashSet<Class>( Arrays.asList(WandOfFireblast.class)),
 				new HashSet<Class>( Arrays.asList(Burning.class, Blazing.class))),
-		ICY ( new HashSet<Class>( Arrays.asList(WandOfFrost.class, Elemental.FrostElemental.class)),
-				new HashSet<Class>( Arrays.asList(Frost.class, Chill.class))),
 		ACIDIC ( new HashSet<Class>( Arrays.asList(Corrosion.class)),
 				new HashSet<Class>( Arrays.asList(Ooze.class))),
-		ELECTRIC ( new HashSet<Class>( Arrays.asList(WandOfLightning.class, Shocking.class, Potential.class, Electricity.class, ShockingDart.class, Elemental.ShockElemental.class )),
+		ELECTRIC ( new HashSet<Class>( Arrays.asList(WandOfLightning.class, Shocking.class, Potential.class, Electricity.class, ShockingDart.class)),
 				new HashSet<Class>()),
-		LARGE,
 		IMMOVABLE;
 		
 		private HashSet<Class> resistances;
@@ -823,10 +682,5 @@ public abstract class Char extends Actor {
 		public HashSet<Class> immunities(){
 			return new HashSet<>(immunities);
 		}
-
-	}
-
-	public static boolean hasProp( Char ch, Property p){
-		return (ch != null && ch.properties().contains(p));
 	}
 }

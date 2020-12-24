@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,9 @@ package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.MetalShard;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRecharging;
@@ -35,9 +37,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
-import com.watabou.utils.Reflection;
-
-import java.util.ArrayList;
 
 public class ReclaimTrap extends TargetedSpell {
 	
@@ -48,17 +47,6 @@ public class ReclaimTrap extends TargetedSpell {
 	private Class<?extends Trap> storedTrap = null;
 	
 	@Override
-	public ArrayList<String> actions(Hero hero) {
-		ArrayList<String> actions = super.actions(hero);
-		//prevents exploits
-		if (storedTrap != null){
-			actions.remove(AC_DROP);
-			actions.remove(AC_THROW);
-		}
-		return actions;
-	}
-
-	@Override
 	protected void affectTarget(Ballistica bolt, Hero hero) {
 		if (storedTrap == null) {
 			quantity++; //storing a trap doesn't consume the spell
@@ -66,7 +54,7 @@ public class ReclaimTrap extends TargetedSpell {
 			if (t != null && t.active && t.visible) {
 				t.disarm();
 				
-				Sample.INSTANCE.play(Assets.Sounds.LIGHTNING);
+				Sample.INSTANCE.play(Assets.SND_LIGHTNING);
 				ScrollOfRecharging.charge(hero);
 				storedTrap = t.getClass();
 				
@@ -75,12 +63,16 @@ public class ReclaimTrap extends TargetedSpell {
 			}
 		} else {
 			
-			Trap t = Reflection.newInstance(storedTrap);
-			storedTrap = null;
-			
-			t.pos = bolt.collisionPos;
-			t.activate();
-			
+			try {
+				Trap t = storedTrap.newInstance();
+				storedTrap = null;
+				
+				t.pos = bolt.collisionPos;
+				t.activate();
+				
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+			}
 		}
 	}
 	
@@ -91,6 +83,18 @@ public class ReclaimTrap extends TargetedSpell {
 			desc += "\n\n" + Messages.get(this, "desc_trap", Messages.get(storedTrap, "name"));
 		}
 		return desc;
+	}
+	
+	@Override
+	protected void onThrow(int cell) {
+		storedTrap = null;
+		super.onThrow(cell);
+	}
+	
+	@Override
+	public void doDrop(Hero hero) {
+		storedTrap = null;
+		super.doDrop(hero);
 	}
 	
 	private static final ItemSprite.Glowing[] COLORS = new ItemSprite.Glowing[]{
@@ -108,13 +112,17 @@ public class ReclaimTrap extends TargetedSpell {
 	@Override
 	public ItemSprite.Glowing glowing() {
 		if (storedTrap != null){
-			return COLORS[Reflection.newInstance(storedTrap).color];
+			try {
+				return COLORS[storedTrap.newInstance().color];
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+			}
 		}
 		return null;
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		//prices of ingredients, divided by output quantity
 		return Math.round(quantity * ((40 + 100) / 3f));
 	}

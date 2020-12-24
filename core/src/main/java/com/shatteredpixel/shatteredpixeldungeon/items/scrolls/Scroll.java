@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,11 +22,10 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.scrolls;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
-import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.ItemStatusHandler;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
@@ -52,7 +51,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
-import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,6 +61,23 @@ public abstract class Scroll extends Item {
 	public static final String AC_READ	= "READ";
 	
 	protected static final float TIME_TO_READ	= 1f;
+
+	protected Integer initials;
+
+	private static final Class<?>[] scrolls = {
+		ScrollOfIdentify.class,
+		ScrollOfMagicMapping.class,
+		ScrollOfRecharging.class,
+		ScrollOfRemoveCurse.class,
+		ScrollOfTeleportation.class,
+		ScrollOfUpgrade.class,
+		ScrollOfRage.class,
+		ScrollOfTerror.class,
+		ScrollOfLullaby.class,
+		ScrollOfTransmutation.class,
+		ScrollOfRetribution.class,
+		ScrollOfMirrorImage.class
+	};
 
 	private static final HashMap<String, Integer> runes = new HashMap<String, Integer>() {
 		{
@@ -92,7 +107,7 @@ public abstract class Scroll extends Item {
 	
 	@SuppressWarnings("unchecked")
 	public static void initLabels() {
-		handler = new ItemStatusHandler<>( (Class<? extends Scroll>[])Generator.Category.SCROLL.classes, runes );
+		handler = new ItemStatusHandler<>( (Class<? extends Scroll>[])scrolls, runes );
 	}
 	
 	public static void save( Bundle bundle ) {
@@ -117,7 +132,7 @@ public abstract class Scroll extends Item {
 
 	@SuppressWarnings("unchecked")
 	public static void restore( Bundle bundle ) {
-		handler = new ItemStatusHandler<>( (Class<? extends Scroll>[])Generator.Category.SCROLL.classes, runes, bundle );
+		handler = new ItemStatusHandler<>( (Class<? extends Scroll>[])scrolls, runes, bundle );
 	}
 	
 	public Scroll() {
@@ -142,7 +157,7 @@ public abstract class Scroll extends Item {
 			image = handler.image(this);
 			rune = handler.label(this);
 		}
-	}
+	};
 	
 	@Override
 	public ArrayList<String> actions( Hero hero ) {
@@ -176,9 +191,11 @@ public abstract class Scroll extends Item {
 	}
 	
 	public abstract void doRead();
+	
+	//currently unused. Used to be used for unstable spellbook prior to 0.7.0
+	public void empoweredRead(){};
 
 	protected void readAnimation() {
-		Invisibility.dispel();
 		curUser.spend( TIME_TO_READ );
 		curUser.busy();
 		((HeroSprite)curUser.sprite).read();
@@ -203,17 +220,13 @@ public abstract class Scroll extends Item {
 	
 	@Override
 	public Item identify() {
-		super.identify();
-
-		if (!isKnown()) {
-			setKnown();
-		}
-		return this;
+		setKnown();
+		return super.identify();
 	}
 	
 	@Override
 	public String name() {
-		return isKnown() ? super.name() : Messages.get(this, rune);
+		return isKnown() ? name : Messages.get(this, rune);
 	}
 	
 	@Override
@@ -221,6 +234,10 @@ public abstract class Scroll extends Item {
 		return isKnown() ?
 			desc() :
 			Messages.get(this, "unknown_desc");
+	}
+
+	public Integer initials(){
+		return isKnown() ? initials : null;
 	}
 	
 	@Override
@@ -242,11 +259,11 @@ public abstract class Scroll extends Item {
 	}
 	
 	public static boolean allKnown() {
-		return handler.known().size() == Generator.Category.SCROLL.classes.length;
+		return handler.known().size() == scrolls.length;
 	}
 	
 	@Override
-	public int value() {
+	public int price() {
 		return 30 * quantity;
 	}
 	
@@ -316,6 +333,7 @@ public abstract class Scroll extends Item {
 		@Override
 		public boolean testIngredients(ArrayList<Item> ingredients) {
 			if (ingredients.size() != 1
+					|| !ingredients.get(0).isIdentified()
 					|| !(ingredients.get(0) instanceof Scroll)
 					|| !stones.containsKey(ingredients.get(0).getClass())){
 				return false;
@@ -336,21 +354,25 @@ public abstract class Scroll extends Item {
 			Scroll s = (Scroll) ingredients.get(0);
 			
 			s.quantity(s.quantity() - 1);
-			s.identify();
 			
-			return Reflection.newInstance(stones.get(s.getClass())).quantity(amnts.get(s.getClass()));
+			try{
+				return stones.get(s.getClass()).newInstance().quantity(amnts.get(s.getClass()));
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+				return null;
+			}
 		}
 		
 		@Override
 		public Item sampleOutput(ArrayList<Item> ingredients) {
 			if (!testIngredients(ingredients)) return null;
 			
-			Scroll s = (Scroll) ingredients.get(0);
-
-			if (!s.isKnown()){
-				return new Runestone.PlaceHolder();
-			} else {
-				return Reflection.newInstance(stones.get(s.getClass())).quantity(amnts.get(s.getClass()));
+			try{
+				Scroll s = (Scroll) ingredients.get(0);
+				return stones.get(s.getClass()).newInstance().quantity(amnts.get(s.getClass()));
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException(e);
+				return null;
 			}
 		}
 	}

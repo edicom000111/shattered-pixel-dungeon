@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2021 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,17 +21,14 @@
 
 package com.watabou.glwrap;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.utils.BufferUtils;
-
-import java.nio.IntBuffer;
+import android.opengl.GLES20;
 
 public class Program {
 
 	private int handle;
 	
 	public Program() {
-		handle = Gdx.gl.glCreateProgram();
+		handle = GLES20.glCreateProgram();
 	}
 	
 	public int handle() {
@@ -39,33 +36,33 @@ public class Program {
 	}
 	
 	public void attach( Shader shader ) {
-		Gdx.gl.glAttachShader( handle, shader.handle() );
+		GLES20.glAttachShader( handle, shader.handle() );
 	}
 	
 	public void link() {
-		Gdx.gl.glLinkProgram( handle );
+		GLES20.glLinkProgram( handle );
 		
-		IntBuffer status = BufferUtils.newIntBuffer(1);
-		Gdx.gl.glGetProgramiv( handle, Gdx.gl.GL_LINK_STATUS, status );
-		if (status.get() == Gdx.gl.GL_FALSE) {
-			throw new Error( Gdx.gl.glGetProgramInfoLog( handle ) );
+		int[] status = new int[1];
+		GLES20.glGetProgramiv( handle, GLES20.GL_LINK_STATUS, status, 0 );
+		if (status[0] == GLES20.GL_FALSE) {
+			throw new Error( GLES20.glGetProgramInfoLog( handle ) );
 		}
 	}
 	
 	public Attribute attribute( String name ) {
-		return new Attribute( Gdx.gl.glGetAttribLocation( handle, name ) );
+		return new Attribute( GLES20.glGetAttribLocation( handle, name ) );
 	}
 	
 	public Uniform uniform( String name ) {
-		return new Uniform( Gdx.gl.glGetUniformLocation( handle, name ) );
+		return new Uniform( GLES20.glGetUniformLocation( handle, name ) );
 	}
 	
 	public void use() {
-		Gdx.gl.glUseProgram( handle );
+		GLES20.glUseProgram( handle );
 	}
 	
 	public void delete() {
-		Gdx.gl.glDeleteProgram( handle );
+		GLES20.glDeleteProgram( handle );
 	}
 	
 	public static Program create( Shader ...shaders ) {
