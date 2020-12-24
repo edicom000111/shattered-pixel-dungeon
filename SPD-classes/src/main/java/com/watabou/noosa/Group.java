@@ -100,7 +100,6 @@ public class Group extends Gizmo {
 	}
 	
 	public synchronized Gizmo add( Gizmo g ) {
-		
 		if (g.parent == this) {
 			return g;
 		}

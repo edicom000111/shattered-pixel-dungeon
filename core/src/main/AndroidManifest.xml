@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.shatteredpixel.shatteredpixeldungeon"
+	package="com.suntain.stonepixeldungeon"
 	android:installLocation="auto">
 	
 	<uses-feature
@@ -21,10 +21,10 @@
 		android:resizeableActivity="true"
 		android:allowBackup="true"
 		android:fullBackupOnly="true"
-		android:backupAgent="com.shatteredpixel.shatteredpixeldungeon.BackupHandler">
+		android:backupAgent="com.suntain.stonepixeldungeon.BackupHandler">
 		<activity
 			android:label="${appName}"
-			android:name="com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon"
+			android:name="com.suntain.stonepixeldungeon.StonePixelDungeon"
 			android:screenOrientation="nosensor">
 			<intent-filter >
 				<action android:name="android.intent.action.MAIN" />

@@ -86,9 +86,13 @@ public class Bundle {
 	public float getFloat( String key ) {
 		return (float)data.optDouble( key, 0.0 );
 	}
-	
+
 	public String getString( String key ) {
 		return data.optString( key );
+	}
+
+	public Object getObject( String key ) {
+		return data.opt( key );
 	}
 
 	public Class getClass( String key ) {
